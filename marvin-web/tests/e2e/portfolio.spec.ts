@@ -23,5 +23,12 @@ test("portfolio shows photos, video and a 3D booth, and slides between events", 
   await group.getByRole("button", { name: "Video" }).click();
   await expect(page.locator("video.showcase-video")).toBeVisible();
   await group.getByRole("button", { name: "3D model" }).click();
-  await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible({ timeout: 60000 });
+  // Software-only browsers may have no WebGL: then the viewer shows a poster and a notice.
+  const viewer = page.locator(".model-viewer");
+  await expect(viewer).not.toHaveAttribute("data-state", "loading", { timeout: 60000 });
+  if ((await viewer.getAttribute("data-state")) === "ready") {
+    await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible();
+  } else {
+    await expect(viewer.getByRole("status")).toContainText("isn’t available");
+  }
 });

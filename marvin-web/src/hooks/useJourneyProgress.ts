@@ -95,11 +95,16 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       direct.current = false;
       setSceneAllowed(true);
       const start = clamp(scrollY / range());
-      const started = performance.now();
+      let last = performance.now();
+      let played = 0;
       const duration = reduced ? 0 : Math.max(700, 3600 * Math.abs(destination - start));
       transitionTarget = destination;
       function step(now: number) {
-        const elapsed = duration === 0 ? 1 : clamp((now - started) / duration);
+        // A stalled frame (slow device, shader compile) advances the entrance by at
+        // most 120 ms, so it never jumps straight to the end.
+        played += Math.min(120, Math.max(0, now - last));
+        last = now;
+        const elapsed = duration === 0 ? 1 : clamp(played / duration);
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
         window.scrollTo({ top: (start + (destination - start) * eased) * range(), behavior: "instant" });
         render();
@@ -161,8 +166,9 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       window.scrollTo({ top: direct.current ? range() : 0, behavior: "instant" });
       render();
       if (section) {
-        // Let the portfolio switch to the requested section before moving focus.
-        window.dispatchEvent(new CustomEvent(sectionEvent, { detail: section }));
+        // "Our work" keeps whichever tab is already open; the other links switch to
+        // their section first, then focus moves to the selected tab.
+        if (location.hash !== "#work") window.dispatchEvent(new CustomEvent(sectionEvent, { detail: section }));
         requestAnimationFrame(() => focusSelectedTab());
       } else home.current?.focus({ preventScroll: true });
     };
