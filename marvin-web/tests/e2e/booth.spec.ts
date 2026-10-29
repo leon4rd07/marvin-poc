@@ -7,6 +7,8 @@ async function goToProgress(page: Page, progress: number) {
 
 test("3D curtain and camera move together, hold, reverse, and release on shortcut", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "GPU rendering is reviewed in Chrome; other engines exercise the accessible routes.");
+  // A smaller canvas keeps software-rendered CI runs fast; the test checks motion, not pixels.
+  await page.setViewportSize({ width: 800, height: 560 });
   const errors: string[] = [];
   const videoRequests: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

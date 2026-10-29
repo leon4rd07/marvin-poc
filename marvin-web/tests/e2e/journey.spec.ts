@@ -73,7 +73,8 @@ test("resize preserves portfolio reading offset", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 620 });
   await expect.poll(readingOffset).toBeGreaterThan(before - 5);
 });
-test("entrance animation plays even when the OS requests reduced motion", async ({ page }) => {
+test("entrance animation plays even when the OS requests reduced motion", async ({ page, browserName }) => {
+  test.skip(browserName === "firefox", "Headless Firefox has no GPU rendering; the 3D entrance is reviewed in Chrome and Safari.");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
@@ -132,7 +133,9 @@ test("clean opening, shortcut, collections, keyboard tabs, home and history", as
 });
 test("one wheel gesture opens and zooms into the portfolio, and one reverses home", async ({
   page,
+  browserName,
 }) => {
+  test.skip(browserName === "firefox", "Headless Firefox has no GPU rendering; the 3D entrance is reviewed in Chrome and Safari.");
   await page.goto("./");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
