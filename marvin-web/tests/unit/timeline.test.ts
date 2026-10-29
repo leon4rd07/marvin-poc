@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cameraPose, createSceneProgress, timeline, wrap } from "../../src/lib/timeline";
+import { cameraPose, createSceneProgress, portal, portalView, timeline, wrap } from "../../src/lib/timeline";
 
 describe("3D entrance choreography", () => {
   it("opens the curtain and advances the camera together without an open-door pause", () => {
@@ -11,20 +11,27 @@ describe("3D entrance choreography", () => {
       expect(timeline(progress).curtain).toBeGreaterThan(0);
       expect(timeline(progress).travel).toBeGreaterThan(0);
     }
-    expect(timeline(.31).curtain).toBeCloseTo(.5);
+    expect(timeline(.285).curtain).toBeCloseTo(.5);
     expect(timeline(.60).curtain).toBe(1);
   });
   it("aligns with the clear doorway before crossing its front plane", () => {
-    for (let progress = .02; progress <= .78; progress += .005) {
+    for (let progress = .02; progress <= 1; progress += .005) {
       const view = cameraPose(progress, 9);
-      expect(view.y).toBe(view.lookY);
+      expect(view.y).toBeCloseTo(view.lookY, 5);
       if (view.z < .9) {
         expect(view.x).toBeCloseTo(.94);
-        expect(timeline(progress).curtain).toBe(1);
+        expect(timeline(progress).curtain).toBeGreaterThan(.9);
       }
     }
-    expect(cameraPose(.78, 9)).toMatchObject({ x: .94, y: 1.7, lookX: .94 });
-    expect(cameraPose(.78, 9).z).toBeCloseTo(-.35);
+  });
+  it("is one continuous zoom that never backs up", () => {
+    let previous = cameraPose(0, 9).z;
+    for (let step = 1; step <= 200; step++) {
+      const z = cameraPose(step / 200, 9).z;
+      expect(z).toBeLessThanOrEqual(previous);
+      previous = z;
+    }
+    expect(cameraPose(1, 9).z).toBeCloseTo(portal.endZ);
   });
   it("holds and reverses the exact same poses without elapsed time", () => {
     for (const progress of [0, .22, .4, .6, .78]) {
@@ -32,41 +39,27 @@ describe("3D entrance choreography", () => {
       timeline(1);
       expect(timeline(progress)).toEqual(before);
     }
-    expect(cameraPose(.6, 9).z).toBeGreaterThan(cameraPose(.7, 9).z);
   });
-  it("limits sudden enlargement during the doorway approach on wide and narrow screens", () => {
-    for (const distance of [8.5, 15]) {
-      let previousScale = 1 / (cameraPose(.02, distance).z + .74);
-      for (let step = 1; step <= 62; step++) {
-        const view = cameraPose(.02 + step * .01, distance);
-        const scale = 1 / (view.z + .74);
-        expect(scale / previousScale).toBeLessThan(1.2);
-        expect(scale).toBeGreaterThanOrEqual(previousScale);
-        if (view.z < .9) expect(view.x).toBeCloseTo(.94, 2);
-        previousScale = scale;
-      }
+  it("locks the portfolio page to the doorway and lands it at full size", () => {
+    const host = 800;
+    const end = portalView(cameraPose(1, 9), host);
+    expect(end.scale).toBeCloseTo(1);
+    expect(end.x).toBeCloseTo(0);
+    expect(end.y).toBeCloseTo(0);
+    let previous = 0;
+    for (let step = 0; step <= 100; step++) {
+      const { scale } = portalView(cameraPose(step / 100, 9), host);
+      expect(scale).toBeGreaterThanOrEqual(previous);
+      previous = scale;
     }
   });
-  it("joins the approach to the doorway crossing without a sudden velocity change", () => {
-    const step = .00001;
-    const before = (cameraPose(.64, 9).z - cameraPose(.64 - step, 9).z) / step;
-    const after = (cameraPose(.64 + step, 9).z - cameraPose(.64, 9).z) / step;
-    expect(after).toBeCloseTo(before, 1);
-    expect(cameraPose(.64, 9).z).toBeGreaterThan(.82);
-    expect(timeline(.70).monitor).toBeGreaterThan(0);
-  });
-  it("bounds invalid input and dissolves directly into the portfolio before interaction", () => {
+  it("bounds invalid input and becomes interactive only at the end", () => {
     for (const value of [-1, NaN, Infinity]) expect(timeline(value).progress).toBe(0);
     expect(timeline(2).progress).toBe(1);
     expect(timeline(.56).monitor).toBe(0);
-    expect(timeline(.78).monitor).toBeCloseTo(.5);
-    for (const value of [.70, .82, .9]) {
-      expect(timeline(value).monitor).toBeGreaterThan(0);
-      expect(timeline(value).monitor).toBeLessThan(1);
-      expect(timeline(value).interactive).toBe(false);
-    }
     expect(timeline(.999).interactive).toBe(false);
     expect(timeline(1).interactive).toBe(true);
+    expect(timeline(1).monitor).toBe(1);
   });
   it("notifies subscribers only for changed poses and cleans up", () => {
     const progress = createSceneProgress();

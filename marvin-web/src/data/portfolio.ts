@@ -5,12 +5,16 @@ export type Portrait = {
   width: number;
   height: number;
 };
+// Optional clip for an event. Drop your own MP4 in public/portfolio/videos/ and
+// point `src` at it; an event without a video simply hides the Video option.
+export type PortfolioVideo = { src: string; label: string };
 export type Collection = {
   id: string;
   name: string;
   caption: string;
   description: string;
   images: readonly Portrait[];
+  video?: PortfolioVideo;
 };
 
 export const portraits: readonly Portrait[] = [
@@ -33,6 +37,7 @@ export const collections: readonly Collection[] = [
     caption: "A few seconds.\nA forever kind of feeling.",
     description: "Unfiltered smiles and the in-between faces. A little reminder of being yourself.",
     images: portraits.slice(0, 3),
+    video: { src: "portfolio/videos/classics.mp4", label: "The classics, a short highlight clip" },
   },
   {
     id: "warm-memories",
@@ -40,6 +45,7 @@ export const collections: readonly Collection[] = [
     caption: "Good company.\nBetter memories.",
     description: "The people who make an ordinary moment feel like something worth keeping.",
     images: portraits.slice(3, 6),
+    video: { src: "portfolio/videos/warm-memories.mp4", label: "Warm memories, a short highlight clip" },
   },
   {
     id: "after-hours",
@@ -47,8 +53,16 @@ export const collections: readonly Collection[] = [
     caption: "One more moment\nbefore you go.",
     description: "For the last laugh, the unexpected pose, and the stories that stay with you.",
     images: [portraits[1], portraits[3], portraits[5]],
+    video: { src: "portfolio/videos/after-hours.mp4", label: "After hours, a short highlight clip" },
   },
 ];
+// Ways to look at an event on the right-hand side of the portfolio screen.
+export const showcaseViews = [
+  { id: "photos", label: "Photos", note: "Little prints. Lasting feelings." },
+  { id: "model", label: "3D model", note: "Drag to turn the booth. Open the curtain and look inside." },
+  { id: "video", label: "Video", note: "A few seconds, in motion." },
+] as const;
+export type ShowcaseView = (typeof showcaseViews)[number]["id"];
 export const tabs = [
   { id: "portraits", label: "The portraits" },
   { id: "experience", label: "The experience" },
@@ -82,6 +96,7 @@ export const contact: {
 };
 export const portfolioLabels = {
   tagline: "A LITTLE SPACE FOR YOU",
+  book: "Book a moment",
   contentNotice: "REFERENCE PORTRAITS · DEMO CONTENT",
   printSignature: "marvin studio",
 };

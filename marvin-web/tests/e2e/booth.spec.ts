@@ -17,7 +17,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator("video")).toHaveCount(0);
   const camera = await scene.getAttribute("data-camera");
-  await goToProgress(page, .31);
+  await goToProgress(page, .285);
   await expect.poll(async () => Number(await scene.getAttribute("data-curtain"))).toBeCloseTo(.5, 2);
   await expect(scene).not.toHaveAttribute("data-camera", camera!);
   await expect(scene).toHaveAttribute("data-scene-motion", "settled");
@@ -34,7 +34,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await expect.poll(async () => Number(await scene.getAttribute("data-frames"))).toBeGreaterThan(Number(heldFrames));
   await expect(scene).toHaveAttribute("data-wind", "breeze");
   await goToProgress(page, .75);
-  await goToProgress(page, .31);
+  await goToProgress(page, .285);
   await expect.poll(async () => Number(await scene.getAttribute("data-curtain"))).toBeCloseTo(.5, 2);
   await expect(scene).toHaveAttribute("data-scene-motion", "settled");
   await expect(scene).toHaveAttribute("data-camera", openingCamera!);
@@ -97,18 +97,15 @@ test("portfolio displays the six PDF photos at their native dimensions", async (
   }
 });
 
-test("direct entry and reduced motion do not load the 3D renderer", async ({ page }) => {
+test("direct entry does not load the 3D renderer until the visitor goes home", async ({ page }) => {
   const resources: string[] = [];
   page.on("request", request => { if (/createBoothScene|\.mp4/.test(request.url())) resources.push(request.url()); });
   await page.goto("./#work");
   await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
   await expect(page.locator("canvas")).toHaveCount(0);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.getByRole("link", { name: "Marvin Studio home" }).click();
-  await expect(page.locator(".booth-poster")).toBeVisible();
-  await goToProgress(page, .2);
-  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
   expect(resources).toEqual([]);
+  await page.getByRole("link", { name: "Marvin Studio home" }).click();
+  await expect.poll(() => resources.length).toBeGreaterThan(0);
 });
 
 test("unavailable WebGL retains the reference and a usable portfolio", async ({ page }) => {

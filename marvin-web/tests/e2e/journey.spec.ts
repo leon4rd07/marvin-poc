@@ -59,7 +59,7 @@ test("motion preference changes preserve focus and scroll position", async ({ pa
   await expect(page.getByRole("tabpanel")).toBeFocused();
 });
 
-test("resize preserves portfolio reading offset; reduced motion bypasses the long entrance", async ({ page }) => {
+test("resize preserves portfolio reading offset", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 600 });
   await page.goto("./#work");
   const readingOffset = () => page.evaluate(() => scrollY -
@@ -72,12 +72,17 @@ test("resize preserves portfolio reading offset; reduced motion bypasses the lon
   const before = await readingOffset();
   await page.setViewportSize({ width: 390, height: 620 });
   await expect.poll(readingOffset).toBeGreaterThan(before - 5);
-  await page.getByRole("link", { name: "Marvin Studio home" }).click();
+});
+test("entrance animation plays even when the OS requests reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("./");
+  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
   await page.mouse.move(180, 400);
-  await page.mouse.wheel(0, 40);
-  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
-  await expect.poll(readingOffset).toBeGreaterThanOrEqual(-2);
+  await page.mouse.wheel(0, 120);
+  // A timed walk-through, not an instant jump: the page is still mid-transition shortly after the gesture.
+  await page.waitForTimeout(400);
+  expect(await page.locator("#work").getAttribute("aria-hidden")).toBe("true");
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false", { timeout: 15000 });
 });
 test("clean opening, shortcut, collections, keyboard tabs, home and history", async ({
   page,

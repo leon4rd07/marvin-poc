@@ -2,48 +2,56 @@ export const clamp = (value: number) => Number.isFinite(value) ? Math.min(1, Mat
 const segment = (p: number, start: number, end: number) => clamp((p - start) / (end - start));
 const ease = (t: number) => t * t * (3 - 2 * t);
 
+export const cameraFov = 34;
+
+// The portfolio lives on the back wall inside the booth. `backZ` is the front face
+// of that wall, `endZ` is where the camera stops (page fills the screen 1:1) and
+// `centerX/eyeY` is the point of the wall the camera finally looks at.
+export const portal = { backZ: -.695, endZ: 0, centerX: .94, eyeY: 1.7, startY: 2 };
+
 // Pure, reversible rail/camera poses. Secondary fabric movement settles around
 // these targets without advancing the scroll timeline or moving the camera.
 export function timeline(progress: number) {
   const p = clamp(progress);
   return {
     progress: p,
-    phase: p < .02 ? "booth" : p < .56 ? "entering" : p < 1 ? "dissolve" : "monitor",
-    curtain: ease(segment(p, .02, .60)),
-    alignment: ease(segment(p, .02, .50)),
-    travel: ease(segment(p, .02, .78)),
+    phase: p < .02 ? "booth" : p < 1 ? "entering" : "monitor",
+    // The curtain is fully open well before the camera reaches the doorway.
+    curtain: ease(segment(p, .02, .55)),
+    alignment: ease(segment(p, .02, .5)),
+    travel: segment(p, .02, 1),
+    // Only used when WebGL is unavailable and the portfolio has to fade in.
     monitor: ease(segment(p, .56, 1)),
     interactive: p >= 1,
   };
 }
 export const wrap = (index: number, length: number) => ((index % length) + length) % length;
 
+// One continuous dolly. The distance to the back wall shrinks by a constant
+// ratio per unit of progress, so the apparent zoom rate never changes: no
+// stop-and-go "zoom, pause, zoom again".
 export function cameraPose(progress: number, distance: number) {
-  const p = clamp(progress);
-  const pose = timeline(p);
-  // Approach at a steady change in apparent scale, then walk through the
-  // opening. A matched tangent joins both segments without a pause or lurch.
-  const facadeZ = .82, clearance = .9, endZ = -.35;
-  const startClearance = Math.max(clearance, distance - facadeZ);
-  const approach = segment(p, .02, .64);
-  const pace = approach * approach * (2 - approach);
-  const logRatio = Math.log(startClearance / clearance);
-  const entryZ = facadeZ + clearance;
-  let z = facadeZ + startClearance * Math.exp(-logRatio * pace);
-  if (p > .64) {
-    const t = segment(p, .64, .78);
-    const tangent = -clearance * logRatio / .62 * .14;
-    z = (2 * t ** 3 - 3 * t ** 2 + 1) * entryZ
-      + (t ** 3 - 2 * t ** 2 + t) * tangent
-      + (-2 * t ** 3 + 3 * t ** 2) * endZ;
-  }
+  const pose = timeline(progress);
+  const near = portal.endZ - portal.backZ;
+  const far = Math.max(distance - portal.backZ, near * 1.5);
+  const z = portal.backZ + far * (near / far) ** pose.travel;
+  const y = portal.eyeY + (portal.startY - portal.eyeY) * (1 - pose.alignment);
+  const x = portal.centerX * pose.alignment;
+  return { x, y, z, lookX: x, lookY: y, lookZ: -.74 };
+}
+
+export type PortalFrame = { scale: number; x: number; y: number };
+
+// Where the flat portfolio page appears on screen, in CSS pixels relative to the
+// centre of the 3D view. The camera always looks straight down -z, so the wall is
+// a pure scale-and-shift of the page; at the end of the journey it is 1:1.
+export function portalView(view: { x: number; y: number; z: number }, hostHeight: number): PortalFrame {
+  const depth = Math.max(.01, view.z - portal.backZ);
+  const focal = hostHeight / 2 / Math.tan(cameraFov * Math.PI / 360);
   return {
-    x: .94 * pose.alignment,
-    y: 1.7 + .3 * (1 - pose.alignment),
-    z,
-    lookX: .94 * pose.alignment,
-    lookY: 1.7 + .3 * (1 - pose.alignment),
-    lookZ: -.74,
+    scale: (portal.endZ - portal.backZ) / depth,
+    x: focal * (portal.centerX - view.x) / depth,
+    y: focal * (view.y - portal.eyeY) / depth,
   };
 }
 

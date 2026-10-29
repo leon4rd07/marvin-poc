@@ -5,7 +5,7 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { asset } from "../lib/assets";
-import { curtainVertex } from "./curtainMotion";
+import { curtainDrop, curtainVertex } from "./curtainMotion";
 import { portraits } from "../data/portfolio";
 
 export const boothDimensions = { width: 3.2, height: 4.04, doorLeft: .43, doorRight: 1.43, eyeHeight: 1.7 };
@@ -31,7 +31,10 @@ function surfaceGrain() {
 
 // A procedural mesh reconstruction of marvin_main.png. Depth and hidden
 // interior surfaces are inferred from the single frontal reference image.
-export function buildBooth(invalidate: () => void) {
+// With `portal`, the interior back wall writes depth but no colour. The canvas
+// stays transparent there, so the HTML portfolio behind it shows through the
+// doorway exactly where the wall would be (and nowhere else).
+export function buildBooth(invalidate: () => void, { portal = false } = {}) {
   const root = new Group();
   root.name = "Marvin — gold-trim reference reconstruction";
   let disposed = false;
@@ -168,7 +171,11 @@ export function buildBooth(invalidate: () => void) {
     root.add(mesh);
   }
 
-  box("Interior back wall", 3.14, 3.48, .09, 0, 1.76, -.74, interior);
+  const backWall = box("Interior back wall", 3.14, 3.48, .09, 0, 1.76, -.74,
+    portal ? new MeshBasicMaterial({ colorWrite: false }) : interior);
+  // Opaque meshes are not drawn in depth order, so the invisible wall must go
+  // first: everything drawn later (the white backdrop) then fails the depth test.
+  if (portal) backWall.renderOrder = -10;
   box("Left side", .09, 3.5, 1.5, -1.555, 1.75, 0, cream);
   box("Right side", .09, 3.5, 1.5, 1.555, 1.75, 0, cream);
   box("Ceiling", 3.2, .08, 1.5, 0, 3.47, 0, cream);
@@ -268,7 +275,7 @@ export function buildBooth(invalidate: () => void) {
   rod.rotation.z = Math.PI / 2;
   rod.position.set(.94, 3.025, .86);
   root.add(rod);
-  const curtainGeometry = new PlaneGeometry(1, 2.77, 120, 40);
+  const curtainGeometry = new PlaneGeometry(1, curtainDrop, 120, 40);
   (curtainGeometry.attributes.position as BufferAttribute).setUsage(DynamicDrawUsage);
   const velvet = photo("textures/olive-velvet.jpg", [20, 25, 590, 1225, 640, 1280]);
   const curtain = new Mesh(curtainGeometry, new MeshPhysicalMaterial({

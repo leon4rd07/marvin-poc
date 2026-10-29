@@ -27,6 +27,10 @@ export function createCurtainMotion(initialOpening: number) {
   };
 }
 
+// How far the curtain hangs below its rail (metres). It used to reach the floor
+// (2.77); half of that leaves the lower half of the doorway open.
+export const curtainDrop = 2.77 / 2;
+
 export function curtainVertex(u: number, v: number, opening: number, sway = 0, windTime = 0) {
   const width = 1 - opening * .81;
   // Nonuniform gathering and a slightly flared hem preserve a fabric silhouette.
@@ -50,7 +54,7 @@ export function curtainVertex(u: number, v: number, opening: number, sway = 0, w
     + .006 * Math.sin(windTime * 1.03 - u * 4 + v * 2.2));
   return {
     x: .44 + rail * width + flare + drape + movement * Math.sin(u * Math.PI / 2) + windX,
-    y: 2.99 - v * 2.77 - .018 * Math.sin(u * Math.PI * 12) ** 2 * (1 - v)
+    y: 2.99 - v * curtainDrop - .018 * Math.sin(u * Math.PI * 12) ** 2 * (1 - v)
       + (.009 * Math.cos(foldPhase + .5) + .016 * Math.sin(u * 19) + .018 * Math.sin(u * 7 + 1)) * v ** 8
       + Math.abs(movement) * .18 + breeze * .004 * Math.sin(windTime * .72 + u * 2),
     z: .87 + fold * amplitude * (.65 + .35 * v)

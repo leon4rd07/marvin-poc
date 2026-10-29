@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { experience, portfolioLabels, tabs, type PortfolioTab } from "../data/portfolio";
+import { sectionEvent, sectionFromHash } from "../lib/sections";
 import { ContactPanel } from "./ContactPanel";
 import { PortfolioGallery } from "./PortfolioGallery";
 import { PortfolioTabs } from "./PortfolioTabs";
 
 export function PortfolioMonitor() {
-  const [tab, setTab] = useState<PortfolioTab>("portraits");
+  const [tab, setTab] = useState<PortfolioTab>(() => sectionFromHash(location.hash) ?? "portraits");
+  // Header links (#work, #experience, #hello) open the matching section.
+  useEffect(() => {
+    const open = (event: Event) => setTab((event as CustomEvent<PortfolioTab>).detail);
+    window.addEventListener(sectionEvent, open);
+    return () => window.removeEventListener(sectionEvent, open);
+  }, []);
   return (
     <div className="camera-wall">
       <div className="camera" aria-hidden="true">
@@ -17,7 +24,9 @@ export function PortfolioMonitor() {
         <div className="monitor-screen">
           <div className="screen-header">
             <span className="screen-wordmark">marvin<span aria-hidden="true">✳</span></span>
-            <span className="screen-tag">{portfolioLabels.tagline}</span>
+            <a className="screen-book" href="#hello" data-nav>
+              {portfolioLabels.book}<span aria-hidden="true">↗</span>
+            </a>
           </div>
           <PortfolioTabs selected={tab} onSelect={setTab} />
           <div id="panel-portraits" role="tabpanel" tabIndex={0}
@@ -54,7 +63,7 @@ export function PortfolioMonitor() {
         </div>
       </div>
       <div className="console" aria-hidden="true">
-        <span>GOOD TIMES, ON REPEAT.</span><div />
+        <i className="console-button" /><span>GOOD TIMES, ON REPEAT.</span><div />
       </div>
     </div>
   );
