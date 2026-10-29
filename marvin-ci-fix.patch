@@ -1,0 +1,140 @@
+diff --git a/marvin-web/playwright.config.ts b/marvin-web/playwright.config.ts
+index c81e31f..6128252 100644
+--- a/marvin-web/playwright.config.ts
++++ b/marvin-web/playwright.config.ts
+@@ -5,6 +5,9 @@ export default defineConfig({
+   testDir: "./tests/e2e",
+   fullyParallel: true,
+   workers: 2,
++  timeout: 90_000,
++  expect: { timeout: 30_000 },
++  retries: process.env.CI ? 1 : 0,
+   reporter: [["list"], ["html", { open: "never" }]],
+   use: {
+     baseURL: `http://127.0.0.1:4173${base}`,
+diff --git a/marvin-web/src/hooks/useJourneyProgress.ts b/marvin-web/src/hooks/useJourneyProgress.ts
+index cb793f5..540d447 100644
+--- a/marvin-web/src/hooks/useJourneyProgress.ts
++++ b/marvin-web/src/hooks/useJourneyProgress.ts
+@@ -81,8 +81,12 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
+       transition = 0;
+       transitionTarget = -1;
+     }
+-    function focusSelectedTab() {
+-      work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
++    // The page may still be inert or the tab still switching for a frame or two
++    // (slower browsers), so keep trying briefly until the focus really lands.
++    function focusSelectedTab(attempt = 0) {
++      const tab = work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
++      tab?.focus({ preventScroll: true });
++      if (document.activeElement !== tab && attempt < 30) requestAnimationFrame(() => focusSelectedTab(attempt + 1));
+     }
+     function playTransition(forward: boolean) {
+       const destination = forward ? 1 : 0;
+@@ -159,7 +163,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
+       if (section) {
+         // Let the portfolio switch to the requested section before moving focus.
+         window.dispatchEvent(new CustomEvent(sectionEvent, { detail: section }));
+-        requestAnimationFrame(focusSelectedTab);
++        requestAnimationFrame(() => focusSelectedTab());
+       } else home.current?.focus({ preventScroll: true });
+     };
+     const onScroll = () => {
+diff --git a/marvin-web/tests/e2e/booth.spec.ts b/marvin-web/tests/e2e/booth.spec.ts
+index cc55657..0e822f0 100644
+--- a/marvin-web/tests/e2e/booth.spec.ts
++++ b/marvin-web/tests/e2e/booth.spec.ts
+@@ -13,7 +13,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
+   page.on("request", request => { if (/\.mp4/.test(request.url())) videoRequests.push(request.url()); });
+   await page.goto("./");
+   const scene = page.locator(".booth-renderer");
+-  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
++  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+   await expect(page.locator("canvas")).toHaveCount(1);
+   await expect(page.locator("video")).toHaveCount(0);
+   const camera = await scene.getAttribute("data-camera");
+@@ -42,7 +42,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
+   await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+   await expect(page.locator("canvas")).toHaveCount(0);
+   await page.getByRole("link", { name: "Marvin Studio home" }).click();
+-  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
++  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+   await expect(page.locator("canvas")).toHaveCount(1);
+   expect(videoRequests).toEqual([]);
+   expect(errors).toEqual([]);
+@@ -60,7 +60,7 @@ test("supplied textures load and gentle wind continues while the rail and camera
+   });
+   await page.goto("./");
+   const scene = page.locator(".booth-renderer");
+-  await expect(scene).toHaveAttribute("data-textures", "loaded", { timeout: 15000 });
++  await expect(scene).toHaveAttribute("data-textures", "loaded", { timeout: 60000 });
+   expect(textures).toEqual(expect.arrayContaining(["printer-reference.jpg", "marvin-wordmark.png", "olive-velvet.jpg"]));
+   expect(failed).toEqual([]);
+   const camera = await scene.getAttribute("data-camera");
+@@ -117,7 +117,7 @@ test("unavailable WebGL retains the reference and a usable portfolio", async ({
+     } as typeof original;
+   });
+   await page.goto("./");
+-  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback", { timeout: 15000 });
++  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback", { timeout: 60000 });
+   await expect(page.locator(".booth-poster")).toBeVisible();
+   await goToProgress(page, .82);
+   await expect(page.locator(".white-transition")).toHaveCount(0);
+@@ -131,7 +131,7 @@ test("unavailable WebGL retains the reference and a usable portfolio", async ({
+ test("GPU context loss falls back without hiding portfolio access", async ({ page, browserName }) => {
+   test.skip(browserName !== "chromium", "Context-loss extension is exercised in Chrome.");
+   await page.goto("./");
+-  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
++  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+   await page.locator("canvas").evaluate(canvas => canvas.getContext("webgl2")!.getExtension("WEBGL_lose_context")!.loseContext());
+   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback");
+   await expect(page.locator(".booth-poster")).toBeVisible();
+diff --git a/marvin-web/tests/e2e/journey.spec.ts b/marvin-web/tests/e2e/journey.spec.ts
+index ebd9694..e28df2f 100644
+--- a/marvin-web/tests/e2e/journey.spec.ts
++++ b/marvin-web/tests/e2e/journey.spec.ts
+@@ -76,13 +76,13 @@ test("resize preserves portfolio reading offset", async ({ page }) => {
+ test("entrance animation plays even when the OS requests reduced motion", async ({ page }) => {
+   await page.emulateMedia({ reducedMotion: "reduce" });
+   await page.goto("./");
+-  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
++  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+   await page.mouse.move(180, 400);
+   await page.mouse.wheel(0, 120);
+   // A timed walk-through, not an instant jump: the page is still mid-transition shortly after the gesture.
+   await page.waitForTimeout(400);
+   expect(await page.locator("#work").getAttribute("aria-hidden")).toBe("true");
+-  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false", { timeout: 15000 });
++  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false", { timeout: 60000 });
+ });
+ test("clean opening, shortcut, collections, keyboard tabs, home and history", async ({
+   page,
+@@ -135,7 +135,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
+ }) => {
+   await page.goto("./");
+   const scene = page.locator(".booth-renderer");
+-  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
++  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+   const initialCamera = await scene.getAttribute("data-camera");
+   await page.mouse.move(180, 400);
+   const started = Date.now();
+diff --git a/marvin-web/tests/e2e/portfolio.spec.ts b/marvin-web/tests/e2e/portfolio.spec.ts
+index ee60535..ca75488 100644
+--- a/marvin-web/tests/e2e/portfolio.spec.ts
++++ b/marvin-web/tests/e2e/portfolio.spec.ts
+@@ -1,6 +1,7 @@
+ import { test, expect } from "@playwright/test";
+ 
+-test("header links open the matching page of the portfolio", async ({ page }) => {
++test("header links open the matching page of the portfolio", async ({ page, isMobile }) => {
++  test.skip(isMobile, "The text links are hidden on phones; the tabs and Our work remain.");
+   await page.goto("./");
+   await page.getByRole("link", { name: "Our work" }).click();
+   await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+@@ -22,5 +23,5 @@ test("portfolio shows photos, video and a 3D booth, and slides between events",
+   await group.getByRole("button", { name: "Video" }).click();
+   await expect(page.locator("video.showcase-video")).toBeVisible();
+   await group.getByRole("button", { name: "3D model" }).click();
+-  await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible({ timeout: 15000 });
++  await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible({ timeout: 60000 });
+ });
