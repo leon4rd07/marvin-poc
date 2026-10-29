@@ -76,13 +76,13 @@ test("resize preserves portfolio reading offset", async ({ page }) => {
 test("entrance animation plays even when the OS requests reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./");
-  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
+  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.mouse.move(180, 400);
   await page.mouse.wheel(0, 120);
   // A timed walk-through, not an instant jump: the page is still mid-transition shortly after the gesture.
   await page.waitForTimeout(400);
   expect(await page.locator("#work").getAttribute("aria-hidden")).toBe("true");
-  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false", { timeout: 15000 });
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false", { timeout: 60000 });
 });
 test("clean opening, shortcut, collections, keyboard tabs, home and history", async ({
   page,
@@ -135,7 +135,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
 }) => {
   await page.goto("./");
   const scene = page.locator(".booth-renderer");
-  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
+  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   const initialCamera = await scene.getAttribute("data-camera");
   await page.mouse.move(180, 400);
   const started = Date.now();

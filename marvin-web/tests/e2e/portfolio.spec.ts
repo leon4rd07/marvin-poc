@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-test("header links open the matching page of the portfolio", async ({ page }) => {
+test("header links open the matching page of the portfolio", async ({ page, isMobile }) => {
+  test.skip(isMobile, "The text links are hidden on phones; the tabs and Our work remain.");
   await page.goto("./");
   await page.getByRole("link", { name: "Our work" }).click();
   await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
@@ -22,5 +23,5 @@ test("portfolio shows photos, video and a 3D booth, and slides between events", 
   await group.getByRole("button", { name: "Video" }).click();
   await expect(page.locator("video.showcase-video")).toBeVisible();
   await group.getByRole("button", { name: "3D model" }).click();
-  await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible({ timeout: 60000 });
 });

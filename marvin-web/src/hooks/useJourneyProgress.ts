@@ -81,8 +81,12 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       transition = 0;
       transitionTarget = -1;
     }
-    function focusSelectedTab() {
-      work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
+    // The page may still be inert or the tab still switching for a frame or two
+    // (slower browsers), so keep trying briefly until the focus really lands.
+    function focusSelectedTab(attempt = 0) {
+      const tab = work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
+      tab?.focus({ preventScroll: true });
+      if (document.activeElement !== tab && attempt < 30) requestAnimationFrame(() => focusSelectedTab(attempt + 1));
     }
     function playTransition(forward: boolean) {
       const destination = forward ? 1 : 0;
@@ -159,7 +163,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (section) {
         // Let the portfolio switch to the requested section before moving focus.
         window.dispatchEvent(new CustomEvent(sectionEvent, { detail: section }));
-        requestAnimationFrame(focusSelectedTab);
+        requestAnimationFrame(() => focusSelectedTab());
       } else home.current?.focus({ preventScroll: true });
     };
     const onScroll = () => {
