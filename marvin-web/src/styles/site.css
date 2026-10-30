@@ -103,7 +103,7 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
    darker corners where it meets the back and front walls. */
 .room-left {
   transform: rotateY(90deg) translateZ(-50vw); backface-visibility: hidden;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 8em;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 15em;
   background:
     radial-gradient(ellipse 42% 38% at 50% 0%, #fff7e6d9, transparent 72%),
     radial-gradient(ellipse 70% 30% at 50% 100%, #b9a27c40, transparent 70%),
@@ -180,7 +180,6 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 .showcase-dots button { position: relative; width: 30px; height: 30px; border: 0; background: none; padding: 0; }
 .showcase-dots button::before { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; translate: -50% -50%; border-radius: 999px; background: #cdc6b3; }
 .showcase-dots button[aria-current="true"]::before { width: 26px; background: var(--ink); }
-.screen-flash { position: absolute; inset: 0; z-index: 5; background: #fff; opacity: 0; pointer-events: none; display: none; }
 /* The console under the monitor: a line of text, the selfie button and the print slot. */
 .console {
   position: relative; width: 58%; margin-top: 1.6em; min-height: 4em; padding: .5em 1.8em;
@@ -200,17 +199,66 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 }
 .selfie-button:hover i { box-shadow: inset 0 -.15em .2em #0002, 0 0 0 .25em #fff, 0 0 1em #f1cd3c; }
 .selfie-button:active i { transform: translateY(.08em); box-shadow: inset 0 .15em .2em #0003, 0 0 0 .25em #ffffffb0; }
-.print-slot { justify-self: end; position: relative; width: 10em; height: .55em; }
+.print-slot { justify-self: end; position: relative; width: 13em; height: .55em; }
 .slot-line { position: absolute; inset: 0; z-index: 2; border-radius: .3em; background: #1b1c1a; box-shadow: inset 0 .15em .2em #000, 0 1px 0 #fffc; }
-/* Paper comes out of the slot: clipped above the slot line, free below it. */
-.paper-feed { position: absolute; top: 50%; left: .6em; right: .6em; height: 16em; z-index: 1; pointer-events: none; clip-path: inset(0 -80% -600% -80%); }
-.paper {
-  position: absolute; inset: 0 0 auto; margin: 0; padding: .55em .55em 0; background: #fffefa; color: #2a2c26;
-  box-shadow: 0 .5em 1em #4a3b2438; transform-origin: 50% 0;
+/* The polaroid comes out of the slot: clipped above the slot line, free below it. */
+.paper-feed { position: absolute; top: 50%; left: .5em; right: .5em; height: 16em; z-index: 1; pointer-events: none; clip-path: inset(0 -200% -800% -200%); }
+.paper { position: absolute; inset: 0 0 auto; margin: 0; pointer-events: auto; transform-origin: 50% 0; transform-style: preserve-3d; }
+.paper-front, .paper-back { backface-visibility: hidden; }
+.paper-front {
+  position: relative; padding: .7em .7em 0; background: linear-gradient(#fffefb, #f8f5ee); color: #2a2c26;
+  box-shadow: 0 .1em .2em #0000001f, 0 .8em 1.6em #4a3b2440;
 }
-.paper img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
-.paper figcaption { padding: .55em 0 .7em; text-align: center; font: italic max(7px, .72em) Georgia, serif; white-space: nowrap; }
-.paper:nth-last-child(2) { opacity: 0; transform: translateY(170%) rotate(12deg); }
+.paper-back {
+  position: absolute; inset: 0; display: grid; place-items: center; transform: rotateY(180deg);
+  background: linear-gradient(160deg, #2b2c28, #1b1c19); color: #e9dfc9; font: 800 max(9px, 1em) Arial, Helvetica, sans-serif; letter-spacing: .08em;
+}
+.paper-photo { position: relative; overflow: hidden; background: #1d2326; }
+.paper-photo img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+/* A fresh instant photo starts as a dark, milky blue-grey and slowly develops. */
+.paper-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, #56646b, #3a454b); opacity: 0; pointer-events: none; }
+.paper figcaption { padding: .7em 2.4em 1.1em .1em; text-align: left; font: italic max(8px, .85em) Georgia, serif; white-space: nowrap; }
+.paper-close {
+  position: absolute; right: .45em; bottom: .45em; width: max(24px, calc(var(--u) * 2)); height: max(24px, calc(var(--u) * 2));
+  display: grid; place-items: center; padding: 0 0 .1em; border: 1px solid #e4dccb; border-radius: 50%;
+  background: #fff; color: var(--ink); font-size: max(14px, calc(var(--u) * 1.3)); line-height: 1;
+}
+.paper-close:hover { background: var(--yellow); border-color: var(--yellow); }
+
+/* Selfie effects. These always play (like the entrance), whatever the OS motion setting. */
+.camera-flash { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: radial-gradient(circle at 34% 40%, #fff, #fffdf6 55%, #fff8e6); opacity: 0; animation: camera-flash .65s ease-out; }
+@keyframes camera-flash { 0% { opacity: 0; } 5% { opacity: 1; } 22% { opacity: .92; } 100% { opacity: 0; } }
+.camera[data-snap]:not([data-snap="0"]) .camera-dot { animation: lens-blink .65s ease-out; }
+.camera[data-snap]:not([data-snap="0"]) .lens { animation: lens-flash .65s ease-out; }
+@keyframes lens-blink { 0%, 50% { background: #fff; box-shadow: 0 0 .9em .2em #fff; } 100% { background: var(--yellow); box-shadow: none; } }
+@keyframes lens-flash { 0% { box-shadow: 0 0 0 0 #fff0; } 8% { box-shadow: 0 0 2.4em 1.2em #fffffff2; } 100% { box-shadow: 0 .2em .4em #0004; } }
+/* Pushed out by the rollers (a short hesitation, then one smooth push), then it
+   swings a little where it hangs from the slot. */
+.paper { animation: polaroid-eject 1.9s cubic-bezier(.3, .05, .2, 1) backwards, polaroid-sway 1.8s ease-out 1.9s; }
+@keyframes polaroid-eject {
+  0% { transform: translateY(-101%); }
+  10% { transform: translateY(-95%); }
+  20% { transform: translateY(-95%); }
+  88% { transform: translateY(1.5%); }
+  100% { transform: translateY(0); }
+}
+@keyframes polaroid-sway { 0% { transform: rotate(0); } 25% { transform: rotate(2.2deg); } 55% { transform: rotate(-1.2deg); } 80% { transform: rotate(.5deg); } 100% { transform: rotate(0); } }
+.paper-photo img { animation: polaroid-develop 5.5s ease-in 1.4s backwards; }
+.paper-photo::after { animation: polaroid-haze 5.5s ease-in 1.4s backwards; }
+@keyframes polaroid-develop { 0% { filter: brightness(.25) contrast(.55) saturate(0); } 60% { filter: brightness(.85) contrast(.9) saturate(.6); } 100% { filter: none; } }
+@keyframes polaroid-haze { 0% { opacity: .92; } 70% { opacity: .15; } 100% { opacity: 0; } }
+/* Putting it away: the photo is lifted, flipped over to its black back and
+   tossed off, spinning, out of sight. */
+.paper[data-closing="true"] { animation: polaroid-toss 1.3s cubic-bezier(.45, 0, .55, 1) forwards; pointer-events: none; }
+@keyframes polaroid-toss {
+  0% { transform: perspective(60em) translateY(0) rotateY(0) rotateZ(0); }
+  22% { transform: perspective(60em) translateY(-6%) rotateY(0) rotateZ(-4deg) scale(1.06); }
+  50% { transform: perspective(60em) translateY(8%) rotateY(180deg) rotateZ(6deg) scale(1.04); }
+  100% { transform: perspective(60em) translate(70%, 240%) rotateY(180deg) rotateZ(48deg) scale(.7); }
+}
+/* Fade the faces, not the card: opacity on the card itself would flatten the flip. */
+.paper[data-closing="true"] > * { animation: polaroid-fade 1.3s linear forwards; }
+@keyframes polaroid-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ---- Below the booth: the closing section -------------------------------- */
 .after { background: #fff; color: var(--ink); }
@@ -247,7 +295,8 @@ h2 { margin: 0 0 18px; font: 800 clamp(2rem, 3vw, 2.7rem)/1.05 Arial, Helvetica,
   .site-header nav a { padding-inline: 10px; }
   .site-header nav a > span { display: none; }
 }
-@media (prefers-reduced-motion: no-preference) {
+/* Small transitions; like the entrance they play whatever the OS motion setting. */
+@media all {
   button, .site-header nav a, .closing-primary { transition: background .16s ease, color .16s ease; }
   .showcase-dots button::before { transition: width .25s ease, background .25s ease; }
   .selfie-button { transition: background .16s ease, transform .08s ease; }
@@ -255,21 +304,4 @@ h2 { margin: 0 0 18px; font: 800 clamp(2rem, 3vw, 2.7rem)/1.05 Arial, Helvetica,
   @keyframes slide-prev { from { opacity: 0; translate: -56px 0; } to { opacity: 1; translate: 0 0; } }
   .showcase-stage[data-direction="next"] :is(.prints, .showcase-slide) { animation: slide-next .4s cubic-bezier(.2, .7, .2, 1); }
   .showcase-stage[data-direction="prev"] :is(.prints, .showcase-slide) { animation: slide-prev .4s cubic-bezier(.2, .7, .2, 1); }
-  .screen-flash { display: block; animation: shutter .6s ease-out; }
-  @keyframes shutter { 0% { opacity: 0; } 12% { opacity: .95; } 100% { opacity: 0; } }
-  .camera[data-snap]:not([data-snap="0"]) .camera-dot { animation: blink .6s ease-out; }
-  @keyframes blink { 0%, 60% { background: #fff; box-shadow: 0 0 .8em #fff; } 100% { background: var(--yellow); box-shadow: none; } }
-  /* The printer feeds the photo out in short stops, like a thermal print head. */
-  .paper { transition: transform .9s cubic-bezier(.5, 0, .8, .4), opacity .9s ease-in; animation: print-out 2.8s linear backwards, settle 1.2s ease-out 2.8s; }
-  @keyframes settle { 0% { transform: rotate(0deg); } 35% { transform: rotate(1.6deg); } 70% { transform: rotate(-.8deg); } 100% { transform: rotate(0deg); } }
-  @keyframes print-out {
-    0% { transform: translateY(-104%); }
-    16% { transform: translateY(-84%); }
-    26% { transform: translateY(-84%); }
-    46% { transform: translateY(-56%); }
-    56% { transform: translateY(-56%); }
-    78% { transform: translateY(-14%); }
-    86% { transform: translateY(-14%); }
-    100% { transform: translateY(0); }
-  }
 }

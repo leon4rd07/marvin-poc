@@ -7,7 +7,7 @@ export const cameraFov = 34;
 // The portfolio lives on the back wall inside the booth. `backZ` is the front face
 // of that wall, `endZ` is where the camera stops (page fills the screen 1:1) and
 // `centerX/eyeY` is the point of the wall the camera finally looks at.
-export const portal = { backZ: -.695, endZ: 0, centerX: .94, eyeY: 1.7, startY: 2 };
+export const portal = { backZ: -.695, endZ: 0, centerX: .94, eyeY: 1.7, startY: 2.75, startSide: .24, lookStartY: 1.85, lookStartZ: 0 };
 
 // Pure, reversible rail/camera poses. Secondary fabric movement settles around
 // these targets without advancing the scroll timeline or moving the camera.
@@ -35,9 +35,15 @@ export function cameraPose(progress: number, distance: number) {
   const near = portal.endZ - portal.backZ;
   const far = Math.max(distance - portal.backZ, near * 1.5);
   const z = portal.backZ + far * (near / far) ** pose.travel;
-  const y = portal.eyeY + (portal.startY - portal.eyeY) * (1 - pose.alignment);
-  const x = portal.centerX * pose.alignment;
-  return { x, y, z, lookX: x, lookY: y, lookZ: -.74 };
+  // Before entering, the camera stands a little to the right and above, looking
+  // at the middle of the booth (a three-quarter view that shows its depth), then
+  // swings round to face the doorway square-on before crossing it.
+  const side = 1 - pose.alignment;
+  const x = portal.centerX * pose.alignment + portal.startSide * distance * side;
+  const y = portal.eyeY + (portal.startY - portal.eyeY) * side;
+  const lookX = portal.centerX * pose.alignment;
+  const lookY = portal.eyeY + (portal.lookStartY - portal.eyeY) * side;
+  return { x, y, z, lookX, lookY, lookZ: -.74 + (portal.lookStartZ + .74) * side };
 }
 
 export type PortalFrame = { scale: number; x: number; y: number };

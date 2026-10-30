@@ -36,22 +36,29 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
   }
 });
 
-test("the selfie button prints a photo out of the console's slot", async ({ page }) => {
+test("the selfie flashes, prints a polaroid out of the console's slot, and it can be put away", async ({ page }) => {
+  // Like the entrance, the selfie effects play even when the OS asks for reduced motion.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("./#work");
   const papers = page.locator(".console .paper-feed .paper");
   await expect(papers).toHaveCount(0);
   await page.getByRole("button", { name: "Selfie" }).click();
+  await expect(page.locator(".camera-flash")).toHaveCount(1);
   await expect(papers).toHaveCount(1);
+  expect(await papers.first().evaluate(paper => getComputedStyle(paper).animationName)).toContain("polaroid-eject");
   await expect(papers.locator("img")).toBeVisible();
-  // The paper hangs from the slot line, below it.
+  // The polaroid hangs from the slot line, below it.
   const slot = await page.locator(".slot-line").boundingBox();
-  await expect.poll(async () => (await papers.first().boundingBox())!.y + (await papers.first().boundingBox())!.height)
+  await expect.poll(async () => { const box = await papers.first().boundingBox(); return box!.y + box!.height; })
     .toBeGreaterThan(slot!.y + slot!.height + 20);
+  // A new selfie puts the previous print away first.
   await page.getByRole("button", { name: "Selfie" }).click();
-  // The new print replaces the old one, which drops away.
-  await expect(papers).toHaveCount(2);
-  await page.getByRole("button", { name: "Selfie" }).click();
-  await expect(papers).toHaveCount(2);
+  await expect(papers.first()).toHaveAttribute("data-closing", "true");
+  await expect(page.locator('.paper[data-closing="false"]')).toHaveCount(1);
+  await expect(papers).toHaveCount(1, { timeout: 10000 });
+  await page.getByRole("button", { name: "Put the photo away" }).click();
+  await expect(papers.first()).toHaveAttribute("data-closing", "true");
+  await expect(papers).toHaveCount(0, { timeout: 10000 });
 });
 
 test("only the closing section follows the booth wall", async ({ page }) => {

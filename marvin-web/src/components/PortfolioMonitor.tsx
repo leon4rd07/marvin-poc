@@ -9,7 +9,7 @@ import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 // print slot) below.
 // Scrolling further leads to the closing section.
 export function PortfolioMonitor() {
-  const { prints, flash, snap } = useSelfie();
+  const { prints, flash, snap, close } = useSelfie();
   return (
     <>
       <div className="interior">
@@ -31,19 +31,19 @@ export function PortfolioMonitor() {
                       <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
                     </div>
                     <PortfolioGallery />
-                    {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
                   </div>
                 </div>
                 <div className="console">
                   <span className="console-text" aria-hidden="true">GOOD TIMES, ON REPEAT.</span>
                   <SelfieButton onSnap={snap} />
-                  <PrintSlot prints={prints} />
+                  <PrintSlot prints={prints} onClose={close} />
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <p className="sr-only" role="status">{prints.length > 0 ? "Your photo is printing." : ""}</p>
+        {flash > 0 && <div className="camera-flash" key={flash} aria-hidden="true" />}
+        <p className="sr-only" role="status">{prints.some(print => !print.closing) ? "Your photo is printing." : ""}</p>
       </div>
       <div className="after">
         <section id="hello" className="closing" aria-labelledby="closing-title">
