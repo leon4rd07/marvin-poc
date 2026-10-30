@@ -105,7 +105,14 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     function render() {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      const progress = clamp(scrollY / range());
+      let progress = clamp(scrollY / range());
+      // Overshooting a little above the top of the booth (scroll momentum coming up
+      // from below) keeps you inside: no turn back, no doorway view. Only the exit
+      // transition, or dragging far up, leaves.
+      if (!transition && state.interactive && progress > .8 && progress < 1) {
+        progress = 1;
+        window.scrollTo({ top: range(), behavior: "instant" });
+      }
       state = timeline(direct.current || (reduced && progress > 0) ? 1 : progress);
       sceneProgress.set(state.progress);
       // Keep the booth beneath the incoming portfolio throughout the entrance;
@@ -192,6 +199,15 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (now < ignoreWheelUntil) { event.preventDefault(); return; }
       const down = event.deltaY > 0;
       if (!down && !transition && gestureFromBelow && !below()) { event.preventDefault(); return; }
+      if (!down && !transition && below()) {
+        // Scrolling up from below: stop exactly at the top of the booth, never past it.
+        const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+        if (scrollY + pixels < range()) {
+          event.preventDefault();
+          window.scrollTo({ top: range(), behavior: "instant" });
+        }
+        return;
+      }
       if (!transition && !handlesDirection(down)) return;
       event.preventDefault();
       if (transition) { playTransition(down); return; }
