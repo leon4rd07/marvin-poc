@@ -28,6 +28,10 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let transition = 0;
     let transitionTarget = -1;
     let turningBack = false;
+    // Back/forward lets the browser restore an old scroll position on purpose; the
+    // "stay inside the booth" snapping must not fight that.
+    let navigatedAt = -Infinity;
+    const justNavigated = () => performance.now() - navigatedAt < 800;
     const turnBackMs = 950;
     let wheelIntent = 0;
     let lastWheel = 0;
@@ -109,7 +113,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       // Overshooting a little above the top of the booth (scroll momentum coming up
       // from below) keeps you inside: no turn back, no doorway view. Only the exit
       // transition, or dragging far up, leaves.
-      if (!transition && state.interactive && progress > .8 && progress < 1) {
+      if (!transition && state.interactive && progress > .8 && progress < 1 && !justNavigated()) {
         progress = 1;
         window.scrollTo({ top: range(), behavior: "instant" });
       }
@@ -287,7 +291,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       // A small programmatic nudge (focus or scroll-into-view inside the room) must
       // not pull you back out of the booth: snap back to the portfolio. Leaving is
       // done with the wheel, a swipe, the keyboard or a real scrollbar drag.
-      if (!transition && state.interactive && scrollY < range() - 2 && scrollY > range() * .8) {
+      if (!transition && state.interactive && scrollY < range() - 2 && scrollY > range() * .8 && !justNavigated()) {
         window.scrollTo({ top: range(), behavior: "instant" });
         return;
       }
@@ -332,6 +336,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     addEventListener("keydown", onKeyDown);
     addEventListener("resize", onResize);
     addEventListener("hashchange", navigate);
+    const onPopState = () => { navigatedAt = performance.now(); };
+    addEventListener("popstate", onPopState);
     addEventListener("pageshow", onPageShow);
     addEventListener("click", onClick);
     const onLeave = () => { setPull(0); playTransition(false); };
@@ -358,6 +364,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       removeEventListener("keydown", onKeyDown);
       removeEventListener("resize", onResize);
       removeEventListener("hashchange", navigate);
+      removeEventListener("popstate", onPopState);
       removeEventListener("pageshow", onPageShow);
       removeEventListener("click", onClick);
       removeEventListener(leaveEvent, onLeave);

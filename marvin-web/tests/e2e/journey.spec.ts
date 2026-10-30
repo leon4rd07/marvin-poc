@@ -64,7 +64,7 @@ test("entrance animation plays even when the OS requests reduced motion", async 
   await page.goto("./");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.mouse.move(180, 400);
-  await page.mouse.wheel(0, 400);
+  await page.mouse.wheel(0, 1200);
   // A timed walk-through, not an instant jump: the page is still mid-transition shortly after the gesture.
   await page.waitForTimeout(400);
   expect(await page.locator("#work").getAttribute("aria-hidden")).toBe("true");
@@ -84,6 +84,8 @@ test("clean opening, shortcut, events, views, home and history", async ({
   else await shortcut.click();
   const first = page.getByRole("button", { name: "Photos" });
   await expect(first).toBeFocused();
+  // Let the turn towards the monitor finish before using it.
+  await expect(page.locator(".room")).toHaveAttribute("data-facing", "monitor");
   await expect(page.locator(".event-title")).toHaveText("IKEA");
   await page.getByRole("button", { name: "Previous event" }).click();
   await expect(page.locator(".event-title")).toHaveText("Wedding");
@@ -115,7 +117,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
   const initialCamera = await scene.getAttribute("data-camera");
   await page.mouse.move(180, 400);
   const started = Date.now();
-  await page.mouse.wheel(0, 400);
+  await page.mouse.wheel(0, 1200);
   await expect.poll(async () => {
     const opening = Number(await scene.getAttribute("data-curtain"));
     return opening > .02 && opening < 1 && await scene.getAttribute("data-camera") !== initialCamera;
@@ -178,8 +180,8 @@ test("reduced motion, resize, failed images and reflow", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Photos" })).toBeVisible();
 });
 
-test("scrolling back up from below the monitor stops at the booth instead of leaving", async ({ page, isMobile }) => {
-  test.skip(isMobile, "Wheel input is exercised on desktop.");
+test("scrolling back up from below the monitor stops at the booth instead of leaving", async ({ page, isMobile, browserName }) => {
+  test.skip(isMobile || browserName !== "chromium", "Wheel physics differ per engine; the behaviour is exercised with desktop Chrome's wheel.");
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await page.mouse.move(700, 500);
@@ -210,8 +212,8 @@ test("a small scroll in front of the booth only nudges the camera and drifts bac
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
 });
 
-test("inside the booth scrolling up never leaves; it shows Step outside, which does", async ({ page, isMobile }) => {
-  test.skip(isMobile, "Wheel input is exercised on desktop.");
+test("inside the booth scrolling up never leaves; it shows Step outside, which does", async ({ page, isMobile, browserName }) => {
+  test.skip(isMobile || browserName !== "chromium", "Wheel physics differ per engine; the behaviour is exercised with desktop Chrome's wheel.");
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await page.waitForTimeout(400);

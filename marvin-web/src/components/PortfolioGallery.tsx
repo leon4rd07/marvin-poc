@@ -16,7 +16,7 @@ function Portrait({ portrait }: { portrait: PortraitData }) {
       ) : (
         <img src={asset(portrait.src)} alt={portrait.alt}
           width={portrait.width} height={portrait.height}
-          loading="lazy" decoding="async" onError={() => setBroken(true)} />
+          decoding="async" onError={() => setBroken(true)} />
       )}
       <figcaption>{portfolioLabels.printSignature}</figcaption>
     </figure>

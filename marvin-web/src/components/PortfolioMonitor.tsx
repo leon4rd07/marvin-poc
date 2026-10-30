@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { closing, contact } from "../data/portfolio";
 import { useSelfie } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
@@ -11,11 +12,26 @@ import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 // Scrolling further leads to the closing section.
 export function PortfolioMonitor() {
   const { prints, flash, snap, close } = useSelfie();
+  // Marks which way the room ends up facing once the turn has finished
+  // ("monitor" or "door"), so anything that needs the settled view can wait for it.
+  const room = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = room.current;
+    if (!element) return;
+    const turning = (event: TransitionEvent) => { if (event.target === element) element.dataset.facing = "turning"; };
+    const settled = (event: TransitionEvent) => {
+      if (event.target !== element) return;
+      element.dataset.facing = element.closest<HTMLElement>(".work-scene")?.dataset.turned === "true" ? "monitor" : "door";
+    };
+    element.addEventListener("transitionrun", turning);
+    element.addEventListener("transitionend", settled);
+    return () => { element.removeEventListener("transitionrun", turning); element.removeEventListener("transitionend", settled); };
+  }, []);
   return (
     <>
       <div className="interior">
         <div className="room-view">
-          <div className="room">
+          <div className="room" ref={room}>
             <div className="room-face room-ceiling" aria-hidden="true" />
             <div className="room-face room-floor" aria-hidden="true" />
             <div className="room-face room-back" aria-hidden="true" />
