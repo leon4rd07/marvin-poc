@@ -33,6 +33,13 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let lastWheel = 0;
     let ignoreWheelUntil = 0;
     let touchStart: { x: number; y: number } | null = null;
+    // Scrolling back up from below the monitor must not run straight into the exit
+    // animation: a wheel gesture or swipe that began below the top of the booth only
+    // scrolls back to the top. Leaving needs a new, deliberate upward gesture.
+    let lastWheelEvent = 0;
+    let gestureFromBelow = false;
+    let touchFromBelow = false;
+    const below = () => scrollY > range() + 2;
     let state = timeline(0);
     const root = document.documentElement;
     const range = () => Math.max(1, (journey.current?.offsetHeight ?? 0) - (stage.current?.offsetHeight ?? innerHeight));
@@ -139,8 +146,11 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     const onWheel = (event: WheelEvent) => {
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
       const now = performance.now();
+      if (now - lastWheelEvent > 300) gestureFromBelow = below();
+      lastWheelEvent = now;
       if (now < ignoreWheelUntil) { event.preventDefault(); return; }
       const down = event.deltaY > 0;
+      if (!down && !transition && gestureFromBelow && !below()) { event.preventDefault(); return; }
       if (!transition && !handlesDirection(down)) return;
       event.preventDefault();
       if (transition) { playTransition(down); return; }
@@ -148,10 +158,12 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (now - lastWheel > 180 || Math.sign(delta) !== Math.sign(wheelIntent)) wheelIntent = 0;
       lastWheel = now;
       wheelIntent += delta;
-      if (Math.abs(wheelIntent) >= 10) { wheelIntent = 0; playTransition(down); }
+      // Leaving the booth asks for a slightly firmer push than entering it.
+      if (Math.abs(wheelIntent) >= (down ? 10 : 60)) { wheelIntent = 0; playTransition(down); }
     };
     const onTouchStart = (event: TouchEvent) => {
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+      touchFromBelow = below();
     };
     const onTouchMove = (event: TouchEvent) => {
       if (!touchStart || event.touches.length !== 1) return;
@@ -159,6 +171,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       const dy = touchStart.y - event.touches[0].clientY;
       if (Math.abs(dy) < 12 || Math.abs(dx) > Math.abs(dy)) return;
       if (!transition && !handlesDirection(dy > 0)) return;
+      if (dy < 0 && !transition && touchFromBelow) return;
       event.preventDefault();
       playTransition(dy > 0);
     };

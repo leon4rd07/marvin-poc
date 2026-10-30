@@ -25,7 +25,7 @@ export function PrintSlot({ prints, onClose }: { prints: readonly Print[]; onClo
               <div className="paper-photo">
                 <img src={asset(print.photo.src)} alt={print.photo.alt} width={print.photo.width} height={print.photo.height} />
               </div>
-              <figcaption>marvin</figcaption>
+              <figcaption>marvin studio</figcaption>
               <button type="button" className="paper-close" aria-label="Put the photo away"
                 disabled={print.closing} onClick={() => onClose(print.id)}>×</button>
             </div>

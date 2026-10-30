@@ -173,3 +173,21 @@ test("reduced motion, resize, failed images and reflow", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await expect(page.getByRole("button", { name: "Photos" })).toBeVisible();
 });
+
+test("scrolling back up from below the monitor stops at the booth instead of leaving", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Wheel input is exercised on desktop.");
+  await page.goto("./#work");
+  await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
+  await page.mouse.move(700, 500);
+  for (let step = 0; step < 8; step++) { await page.mouse.wheel(0, 120); await page.waitForTimeout(40); }
+  const top = await page.evaluate(() => document.querySelector<HTMLElement>(".journey")!.offsetHeight - document.querySelector<HTMLElement>(".stage")!.offsetHeight);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(top + 100);
+  // One long upward gesture (with momentum) only scrolls back to the top of the booth.
+  for (let step = 0; step < 30; step++) { await page.mouse.wheel(0, -90); await page.waitForTimeout(40); }
+  await page.waitForTimeout(600);
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
+  expect(Math.abs(await page.evaluate(() => scrollY) - top)).toBeLessThan(4);
+  // A new, deliberate upward scroll leaves the booth.
+  await page.mouse.wheel(0, -120);
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
+});
