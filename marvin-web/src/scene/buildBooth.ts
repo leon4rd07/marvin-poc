@@ -5,8 +5,7 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { asset } from "../lib/assets";
-import { curtainDrop, curtainVertex } from "./curtainMotion";
-import { portraits } from "../data/portfolio";
+import { curtainDrop, curtainVertex, noHand, type Hand } from "./curtainMotion";
 
 export const boothDimensions = { width: 3.2, height: 4.04, doorLeft: .43, doorRight: 1.43, eyeHeight: 1.7 };
 
@@ -34,7 +33,43 @@ function surfaceGrain() {
 // With `portal`, the interior back wall writes depth but no colour. The canvas
 // stays transparent there, so the HTML portfolio behind it shows through the
 // doorway exactly where the wall would be (and nowhere else).
-export function buildBooth(invalidate: () => void, { portal = false } = {}) {
+export type BoothTheme = { curtain?: string; sign?: string; sheen?: string };
+
+// A softly lit "how it works" board that replaces the old photo wall: it tells
+// visitors what the booth does, in the Marvin voice.
+function guideBoard() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 640; canvas.height = 780;
+  const g = canvas.getContext("2d")!;
+  const paperGradient = g.createLinearGradient(0, 0, 0, 780);
+  paperGradient.addColorStop(0, "#fffdf4"); paperGradient.addColorStop(1, "#f4ecd6");
+  g.fillStyle = paperGradient; g.fillRect(0, 0, 640, 780);
+  g.strokeStyle = "#cdb779"; g.lineWidth = 6; g.strokeRect(28, 28, 584, 724);
+  g.strokeStyle = "#e5d7ab"; g.lineWidth = 2; g.strokeRect(44, 44, 552, 692);
+  g.fillStyle = "#1c1c18"; g.textAlign = "center";
+  g.font = "600 26px Helvetica, Arial, sans-serif";
+  g.fillText("S T I L L   M O M E N T S", 320, 118);
+  g.font = "900 78px Helvetica, Arial, sans-serif";
+  g.fillText("Smile,", 320, 214);
+  g.fillText("it’s on us.", 320, 296);
+  g.fillStyle = "#c9a227"; g.font = "56px Helvetica, Arial, sans-serif";
+  g.fillText("✳", 320, 372);
+  const steps = [["01", "Step inside"], ["02", "Pull the curtain"], ["03", "Pose and smile"], ["04", "Keep your prints"]];
+  steps.forEach(([number, label], index) => {
+    const y = 456 + index * 68;
+    g.fillStyle = "#c9a227"; g.textAlign = "left"; g.font = "800 28px Helvetica, Arial, sans-serif";
+    g.fillText(number, 92, y);
+    g.fillStyle = "#1c1c18"; g.font = "600 34px Helvetica, Arial, sans-serif";
+    g.fillText(label, 160, y);
+    if (index < steps.length - 1) { g.fillStyle = "#e5d7ab"; g.fillRect(92, y + 24, 456, 2); }
+  });
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+export function buildBooth(invalidate: () => void, { portal = false, theme = {} as BoothTheme } = {}) {
   const root = new Group();
   root.name = "Marvin — gold-trim reference reconstruction";
   let disposed = false;
@@ -89,7 +124,6 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
     clearcoat: .25, clearcoatRoughness: .2, envMapIntensity: 1.15,
     normalMap: polishedNormals });
   gold.normalScale.set(.65, .65);
-  const paper = new MeshStandardMaterial({ color: "#fffdf6", roughness: .92 });
 
   function box(name: string, width: number, height: number, depth: number,
     x: number, y: number, z: number, material: Material, rounded = false) {
@@ -203,9 +237,10 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
   const signContext = signCanvas.getContext("2d")!;
   signContext.scale(512, 160);
   const signLight = signContext.createRadialGradient(.5, .5, .1, .5, .5, .68);
-  signLight.addColorStop(0, "#fff7c8");
-  signLight.addColorStop(.65, "#fff0ae");
-  signLight.addColorStop(1, "#e8ca7c");
+  const signTint = theme.sign ?? "#fff0ae";
+  signLight.addColorStop(0, "#fffbe6");
+  signLight.addColorStop(.65, signTint);
+  signLight.addColorStop(1, theme.sign ? signTint : "#e8ca7c");
   signContext.fillStyle = signLight;
   signContext.fillRect(0, 0, 1, 1);
   const signMap = new CanvasTexture(signCanvas);
@@ -226,29 +261,13 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
 
   const displayScale = 1.3;
   const displayY = 2.37;
-  box("Portrait display inset", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
-    new MeshStandardMaterial({ color: "#fff3c8", roughness: .8, emissive: "#ffe4a3", emissiveIntensity: .18 }));
-  frame("Portrait display frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
-  const rotations = [-.12, .09, .08, -.1, -.1, .13];
-  for (let index = 0; index < 6; index++) {
-    const card = new Group();
-    card.name = `Supplied PDF portrait ${index + 1}`;
-    card.position.set(displayX + (index % 2 === 0 ? -.185 : .185) * displayScale,
-      displayY + (.33 - Math.floor(index / 2) * .33) * displayScale, .87);
-    card.scale.set(displayScale, displayScale, 1);
-    card.rotation.z = rotations[index];
-    const portrait = portraits[index];
-    const aspect = portrait.width / portrait.height;
-    const imageWidth = Math.min(.25, .245 * aspect);
-    const imageHeight = imageWidth / aspect;
-    const backing = new Mesh(new BoxGeometry(imageWidth + .04, imageHeight + .06, .008), paper);
-    card.add(backing);
-    const map = photo(portrait.src);
-    const image = new Mesh(new PlaneGeometry(imageWidth, imageHeight), new MeshBasicMaterial({ map, toneMapped: false }));
-    image.position.set(0, .01, .006);
-    card.add(image);
-    root.add(card);
-  }
+  const board = guideBoard();
+  textures.add(board);
+  box("Guide board backing", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
+    new MeshStandardMaterial({ color: "#f2e7c6", roughness: .8 }));
+  frame("Guide board frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
+  plane("Guide board — how it works", .83 * displayScale, 1.02 * displayScale, displayX, displayY, .832,
+    new MeshBasicMaterial({ map: board, toneMapped: false }));
 
   const printerPhoto = "textures/printer-reference.jpg";
   // Match the main reference: compact empty metal recess and a narrow upper
@@ -278,11 +297,51 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
   const curtainGeometry = new PlaneGeometry(1, curtainDrop, 120, 40);
   (curtainGeometry.attributes.position as BufferAttribute).setUsage(DynamicDrawUsage);
   const velvet = photo("textures/olive-velvet.jpg", [20, 25, 590, 1225, 640, 1280]);
-  const curtain = new Mesh(curtainGeometry, new MeshPhysicalMaterial({
-    color: "#ffffff", map: velvet, roughness: .95, metalness: 0,
+  const curtainMaterial = new MeshPhysicalMaterial({
+    color: theme.curtain ?? "#ffffff", map: velvet, roughness: .95, metalness: 0,
     bumpMap: grain, bumpScale: .0018,
-    sheen: .85, sheenColor: "#889064", sheenRoughness: .85, side: DoubleSide,
-  }));
+    sheen: .85, sheenColor: theme.sheen ?? "#889064", sheenRoughness: .85, side: DoubleSide,
+  });
+  const curtain = new Mesh(curtainGeometry, curtainMaterial);
+  if (theme.curtain) {
+    // A recoloured curtain keeps the velvet's folds: use its brightness only and
+    // let the material colour supply the hue.
+    textureLoads.push(new Promise<void>(resolve => {
+      const original = velvet.image as CanvasImageSource & { width: number; height: number } | undefined;
+      const tint = () => {
+        const source = velvet.image as HTMLImageElement | undefined;
+        if (disposed || !source?.width) { resolve(); return; }
+        const canvas = document.createElement("canvas");
+        canvas.width = source.width; canvas.height = source.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(source, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < pixels.data.length; i += 4) {
+          const luminance = .3 * pixels.data[i] + .59 * pixels.data[i + 1] + .11 * pixels.data[i + 2];
+          const value = Math.min(255, luminance * 1.55 + 28);
+          pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = value;
+        }
+        context.putImageData(pixels, 0, 0);
+        const gray = new CanvasTexture(canvas);
+        gray.colorSpace = SRGBColorSpace;
+        gray.anisotropy = 4;
+        gray.repeat.copy(velvet.repeat);
+        gray.offset.copy(velvet.offset);
+        textures.add(gray);
+        curtainMaterial.map = gray;
+        curtainMaterial.needsUpdate = true;
+        invalidate();
+        resolve();
+      };
+      if (original && "complete" in original && (original as HTMLImageElement).complete) tint();
+      else {
+        const wait = setInterval(() => {
+          const source = velvet.image as HTMLImageElement | undefined;
+          if (disposed || (source && source.complete && source.width)) { clearInterval(wait); tint(); }
+        }, 40);
+      }
+    }));
+  }
   curtain.name = "Supplied olive velvet — soft gathered curtain";
   curtain.castShadow = true;
   curtain.receiveShadow = true;
@@ -297,16 +356,19 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
   let lastOpening = -1;
   let lastSway = NaN;
   let lastWindTime = NaN;
-  function setCurtain(opening: number, sway = 0, windTime = 0) {
-    if (opening === lastOpening && sway === lastSway && windTime === lastWindTime) return;
+  let lastHand = "";
+  function setCurtain(opening: number, sway = 0, windTime = 0, hand: Hand = noHand) {
+    const handKey = hand.press === 0 && hand.drag === 0 ? "" : `${hand.u.toFixed(3)},${hand.v.toFixed(3)},${hand.press.toFixed(3)},${hand.drag.toFixed(3)}`;
+    if (opening === lastOpening && sway === lastSway && windTime === lastWindTime && handKey === lastHand) return;
     lastOpening = opening;
     lastSway = sway;
     lastWindTime = windTime;
+    lastHand = handKey;
     const positions = curtainGeometry.attributes.position;
     const uv = curtainGeometry.attributes.uv;
     for (let i = 0; i < positions.count; i++) {
       const u = uv.getX(i), v = 1 - uv.getY(i);
-      const point = curtainVertex(u, v, opening, sway, windTime);
+      const point = curtainVertex(u, v, opening, sway, windTime, hand);
       positions.setXYZ(i, point.x, point.y, point.z);
     }
     positions.needsUpdate = true;
@@ -316,7 +378,7 @@ export function buildBooth(invalidate: () => void, { portal = false } = {}) {
   }
   setCurtain(0);
   return {
-    root, setCurtain, ready: Promise.all(textureLoads),
+    root, setCurtain, curtain, ready: Promise.all(textureLoads),
     dispose() {
       disposed = true;
       const materials = new Set<Material>();

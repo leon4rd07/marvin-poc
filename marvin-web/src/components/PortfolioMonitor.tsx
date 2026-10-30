@@ -1,70 +1,65 @@
-import { useEffect, useState } from "react";
-import { experience, portfolioLabels, tabs, type PortfolioTab } from "../data/portfolio";
-import { sectionEvent, sectionFromHash } from "../lib/sections";
-import { ContactPanel } from "./ContactPanel";
+import { closing, contact, experience } from "../data/portfolio";
+import { asset } from "../lib/assets";
 import { PortfolioGallery } from "./PortfolioGallery";
-import { PortfolioTabs } from "./PortfolioTabs";
+import { useSelfie } from "../hooks/useSelfie";
+import { PrinterTray, SelfieButton } from "./SelfiePrinter";
 
+// Inside the booth: the monitor sits on the left wall, the printer on the right.
+// Scrolling further goes down to the experience and the closing call to action.
 export function PortfolioMonitor() {
-  const [tab, setTab] = useState<PortfolioTab>(() => sectionFromHash(location.hash) ?? "portraits");
-  // Header links (#work, #experience, #hello) open the matching section.
-  useEffect(() => {
-    const open = (event: Event) => setTab((event as CustomEvent<PortfolioTab>).detail);
-    window.addEventListener(sectionEvent, open);
-    return () => window.removeEventListener(sectionEvent, open);
-  }, []);
+  const { prints, flash, snap } = useSelfie();
   return (
-    <div className="camera-wall">
-      <div className="camera" aria-hidden="true">
-        <span className="camera-dot" />
-        <div className="lens"><i /></div>
-        <span>LOOK HERE</span>
-      </div>
-      <div className="monitor-shell">
-        <div className="monitor-screen">
-          <div className="screen-header">
-            <span className="screen-wordmark">marvin<span aria-hidden="true">✳</span></span>
-            <a className="screen-book" href="#hello" data-nav>
-              {portfolioLabels.book}<span aria-hidden="true">↗</span>
-            </a>
-          </div>
-          <PortfolioTabs selected={tab} onSelect={setTab} />
-          <div id="panel-portraits" role="tabpanel" tabIndex={0}
-            aria-labelledby="tab-portraits" hidden={tab !== "portraits"} className="panel portraits-panel">
-            <PortfolioGallery />
-          </div>
-          <div id="panel-experience" role="tabpanel" tabIndex={0}
-            aria-labelledby="tab-experience" hidden={tab !== "experience"} className="panel experience-panel">
-            <div>
-              <p className="eyebrow">A MOMENT, JUST FOR YOU</p>
-              <h2>{experience.heading}</h2>
-              <p>{experience.description}</p>
+    <>
+      <div className="interior">
+        <div className="room">
+          <div className="monitor-column">
+            <div className="camera" aria-hidden="true" data-snap={flash}>
+              <span className="camera-dot" />
+              <div className="lens"><i /></div>
+              <span>LOOK HERE</span>
             </div>
-            <ol className="experience-steps">
-              {experience.steps.map((step, index) => (
-                <li key={step.title}>
-                  <span aria-hidden="true">0{index + 1}</span>
-                  <div><h3>{step.title}</h3><p>{step.description}</p></div>
-                </li>
-              ))}
-            </ol>
+            <div className="monitor-shell">
+              <div className="monitor-screen">
+                <div className="screen-header">
+                  <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
+                </div>
+                <PortfolioGallery />
+                {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
+              </div>
+              <div className="monitor-base" aria-hidden="true"><i /></div>
+            </div>
+            <div className="console">
+              <SelfieButton onSnap={snap} />
+              <div className="console-line" aria-hidden="true" />
+            </div>
           </div>
-          <div id="panel-hello" role="tabpanel" tabIndex={0}
-            aria-labelledby="tab-hello" hidden={tab !== "hello"} className="panel contact-panel">
-            <ContactPanel />
+          <PrinterTray prints={prints} />
+        </div>
+        <p className="sr-only" role="status">{prints.length > 0 ? "Your photo is printing." : ""}</p>
+      </div>
+      <div className="after">
+        <section id="experience" className="experience" aria-labelledby="experience-title">
+          <p className="eyebrow">A MOMENT, JUST FOR YOU</p>
+          <h2 id="experience-title" tabIndex={-1}>{experience.heading}</h2>
+          <ol className="experience-steps">
+            {experience.steps.map((step, index) => (
+              <li key={step.title}>
+                <span aria-hidden="true">0{index + 1}</span>
+                <div><h3>{step.title}</h3><p>{step.description}</p></div>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section id="hello" className="closing" aria-labelledby="closing-title">
+          <p className="eyebrow">{closing.eyebrow}</p>
+          <h2 id="closing-title" tabIndex={-1}>{closing.heading}</h2>
+          <div className="closing-actions">
+            <a className="closing-primary" href="#home" data-nav>{closing.again} <span aria-hidden="true">↺</span></a>
+            {contact.action && <a className="closing-link" href={contact.action.href}>{closing.hello}</a>}
           </div>
-          <footer className="screen-footer">
-            <span>{portfolioLabels.contentNotice}</span>
-            <span aria-hidden="true">0{tabs.findIndex((item) => item.id === tab) + 1} — 0{tabs.length}</span>
-          </footer>
-        </div>
-        <div className="monitor-base">
-          <span>MARVIN STUDIO / MEMORY MAKER</span><i aria-hidden="true" />
-        </div>
+          <p className="closing-note">{closing.notice}</p>
+        </section>
       </div>
-      <div className="console" aria-hidden="true">
-        <i className="console-button" /><span>GOOD TIMES, ON REPEAT.</span><div />
-      </div>
-    </div>
+    </>
   );
 }

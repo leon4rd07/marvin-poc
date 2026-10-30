@@ -1,7 +1,7 @@
 import {
   ACESFilmicToneMapping, Group, PCFSoftShadowMap, PerspectiveCamera, Scene, SRGBColorSpace, WebGLRenderer,
 } from "three";
-import { buildBooth } from "./buildBooth";
+import { buildBooth, type BoothTheme } from "./buildBooth";
 import { createCurtainMotion } from "./curtainMotion";
 import { createStudioRig } from "./studioRig";
 
@@ -10,7 +10,7 @@ const targetY = 1.95;
 
 // A small, interactive copy of the booth for the portfolio: drag to turn it, open
 // and close the curtain. It renders only while something moves.
-export function createBoothViewer(host: HTMLElement, { autoRotate }: { autoRotate: boolean }) {
+export function createBoothViewer(host: HTMLElement, { autoRotate, theme }: { autoRotate: boolean; theme?: BoothTheme }) {
   const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.toneMapping = ACESFilmicToneMapping;
@@ -23,7 +23,7 @@ export function createBoothViewer(host: HTMLElement, { autoRotate }: { autoRotat
   const scene = new Scene();
   const camera = new PerspectiveCamera(fov, 1, .1, 60);
   const rig = createStudioRig(renderer, scene, 1024);
-  const booth = buildBooth(schedule);
+  const booth = buildBooth(schedule, { theme });
   const pivot = new Group();
   booth.root.position.z = -.05;
   pivot.add(booth.root);
@@ -89,7 +89,7 @@ export function createBoothViewer(host: HTMLElement, { autoRotate }: { autoRotat
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     const tangent = Math.tan(fov * Math.PI / 360);
-    distance = Math.max(4.35 / (2 * tangent), 4 / (2 * tangent * camera.aspect));
+    distance = Math.max(4.4 / (2 * tangent), 3.8 / (2 * tangent * camera.aspect));
     schedule();
   }
   const down = (event: PointerEvent) => {

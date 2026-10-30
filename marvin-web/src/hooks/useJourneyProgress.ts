@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/timeline";
-import { sectionEvent, sectionFromHash } from "../lib/sections";
+import { sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
 export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
@@ -81,12 +81,17 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       transition = 0;
       transitionTarget = -1;
     }
-    // The page may still be inert or the tab still switching for a frame or two
-    // (slower browsers), so keep trying briefly until the focus really lands.
-    function focusSelectedTab(attempt = 0) {
-      const tab = work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]');
-      tab?.focus({ preventScroll: true });
-      if (document.activeElement !== tab && attempt < 30) requestAnimationFrame(() => focusSelectedTab(attempt + 1));
+    // The page may still be inert for a frame or two (slower browsers), so keep
+    // trying briefly until the focus really lands. "Our work" focuses the first
+    // view option on the monitor; the other sections scroll into view first.
+    function focusSection(section: Section, attempt = 0) {
+      const lower = section === "experience" || section === "hello";
+      const target = lower
+        ? work.current?.querySelector<HTMLElement>(`#${section} h2`)
+        : work.current?.querySelector<HTMLElement>('.showcase-views button[aria-pressed="true"]');
+      if (lower && attempt === 0) target?.scrollIntoView({ block: "start", behavior: "instant" });
+      target?.focus({ preventScroll: true });
+      if (document.activeElement !== target && attempt < 30) requestAnimationFrame(() => focusSection(section, attempt + 1));
     }
     function playTransition(forward: boolean) {
       const destination = forward ? 1 : 0;
@@ -101,8 +106,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       transitionTarget = destination;
       function step(now: number) {
         // A stalled frame (slow device, shader compile) advances the entrance by at
-        // most 120 ms, so it never jumps straight to the end.
-        played += Math.min(120, Math.max(0, now - last));
+        // most 250 ms, so it never jumps straight to the end.
+        played += Math.min(250, Math.max(0, now - last));
         last = now;
         const elapsed = duration === 0 ? 1 : clamp(played / duration);
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
@@ -113,7 +118,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
           transition = 0;
           transitionTarget = -1;
           ignoreWheelUntil = now + 220;
-          if (forward) focusSelectedTab();
+          if (forward) focusSection("work");
           else home.current?.focus({ preventScroll: true });
         }
       }
@@ -150,7 +155,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || target?.isContentEditable
-        || target?.matches("input, textarea, select, video, [role='tab']")) return;
+        || target?.matches("input, textarea, select, video, button, [role='tab']")) return;
       const down = event.key === "PageDown" || event.key === "ArrowDown" || event.key === " " && !event.shiftKey;
       const up = event.key === "PageUp" || event.key === "ArrowUp" || event.key === " " && event.shiftKey;
       if (!(down || up) || !transition && !handlesDirection(down)) return;
@@ -166,10 +171,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       window.scrollTo({ top: direct.current ? range() : 0, behavior: "instant" });
       render();
       if (section) {
-        // "Our work" keeps whichever tab is already open; the other links switch to
-        // their section first, then focus moves to the selected tab.
-        if (location.hash !== "#work") window.dispatchEvent(new CustomEvent(sectionEvent, { detail: section }));
-        requestAnimationFrame(() => focusSelectedTab());
+        requestAnimationFrame(() => focusSection(section));
       } else home.current?.focus({ preventScroll: true });
     };
     const onScroll = () => {

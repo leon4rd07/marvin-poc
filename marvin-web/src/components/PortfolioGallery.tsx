@@ -23,8 +23,8 @@ function Portrait({ portrait }: { portrait: PortraitData }) {
   );
 }
 
-// One event at a time. Slide left or right (swipe, arrows or dots) to move to
-// the next one; each event can be viewed as photos, a 3D model or a video.
+// One event at a time. Slide left or right (swipe, arrows or dots) to move to the
+// next event; every event has its own photos, 3D booth and video.
 export function PortfolioGallery() {
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<"none" | "next" | "prev">("none");
@@ -33,7 +33,6 @@ export function PortfolioGallery() {
   const current = collections[index];
   const views = showcaseViews.filter(view => view.id !== "video" || current.video);
   const view = views.some(option => option.id === chosen) ? chosen : "photos";
-  const note = showcaseViews.find(option => option.id === view)!.note;
 
   function go(target: number, forward = target > index) {
     setDirection(forward ? "next" : "prev");
@@ -51,31 +50,19 @@ export function PortfolioGallery() {
     if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) step(dx < 0 ? 1 : -1);
   }
   return (
-    <>
-      <div className="portfolio-copy">
-        <p className="eyebrow">THE MOMENTS IN BETWEEN</p>
-        <h2>{current.caption}</h2>
-        <p>{current.description}</p>
-        <div className="collection-control" role="group" aria-label="Portrait collections">
-          <button type="button" aria-label="Previous collection" onClick={() => step(-1)}>←</button>
-          <span aria-live="polite" aria-atomic="true">
-            {current.name}
-            <small>{String(index + 1).padStart(2, "0")} / {String(collections.length).padStart(2, "0")}</small>
-          </span>
-          <button type="button" aria-label="Next collection" onClick={() => step(1)}>→</button>
-        </div>
+    <div className="showcase">
+      <div className="showcase-views" role="group" aria-label="How to view this event">
+        {views.map(option => (
+          <button type="button" key={option.id} aria-pressed={view === option.id}
+            onClick={() => { setDirection("none"); setChosen(option.id); }}>{option.label}</button>
+        ))}
       </div>
-      <div className="showcase">
-        <div className="showcase-views" role="group" aria-label="How to view this collection">
-          {views.map(option => (
-            <button type="button" key={option.id} aria-pressed={view === option.id}
-              onClick={() => { setDirection("none"); setChosen(option.id); }}>{option.label}</button>
-          ))}
-        </div>
-        <div className="showcase-stage" data-view={view} data-direction={direction}
-          onPointerDown={view === "model" ? undefined : onPointerDown}
-          onPointerUp={view === "model" ? undefined : onPointerUp}
-          onPointerCancel={() => { swipe.current = null; }}>
+      <div className="showcase-stage" data-view={view} data-direction={direction}
+        onPointerDown={view === "model" ? undefined : onPointerDown}
+        onPointerUp={view === "model" ? undefined : onPointerUp}
+        onPointerCancel={() => { swipe.current = null; }}>
+        <button type="button" className="slide-arrow" data-side="prev" aria-label="Previous event" onClick={() => step(-1)}>‹</button>
+        <div className="showcase-media">
           {view === "photos" && (
             <div className="gallery">
               <div className="prints" key={current.id}>
@@ -91,18 +78,19 @@ export function PortfolioGallery() {
               </video>
             </div>
           )}
-          {view === "model" && <BoothModelViewer />}
+          {view === "model" && <BoothModelViewer theme={current.theme} />}
         </div>
-        <div className="showcase-foot">
-          <p className="gallery-note">{note}</p>
-          <div className="showcase-dots" role="group" aria-label="Jump to a collection">
-            {collections.map((collection, position) => (
-              <button type="button" key={collection.id} aria-label={`Show ${collection.name}`}
-                aria-current={position === index} onClick={() => go(position)} />
-            ))}
-          </div>
+        <button type="button" className="slide-arrow" data-side="next" aria-label="Next event" onClick={() => step(1)}>›</button>
+      </div>
+      <div className="showcase-foot">
+        <h2 className="event-title" aria-live="polite" aria-atomic="true">{current.name}</h2>
+        <div className="showcase-dots" role="group" aria-label="Jump to an event">
+          {collections.map((collection, position) => (
+            <button type="button" key={collection.id} aria-label={`Show ${collection.name}`}
+              aria-current={position === index} onClick={() => go(position)} />
+          ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }

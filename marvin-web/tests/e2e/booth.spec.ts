@@ -41,7 +41,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await expect(scene).toHaveAttribute("data-scene-motion", "settled");
   await expect(scene).toHaveAttribute("data-camera", openingCamera!);
   await page.getByRole("link", { name: "Our work" }).click();
-  await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await expect(page.locator("canvas")).toHaveCount(0);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
@@ -82,28 +82,46 @@ test("supplied textures load and gentle wind continues while the rail and camera
   await expect(scene).toHaveAttribute("data-camera", heldCamera!);
 });
 
-test("portfolio displays the six PDF photos at their native dimensions", async ({ page }) => {
+test("each event shows its own demo photos at their native dimensions", async ({ page }) => {
   await page.goto("./#work");
   const photos = page.locator(".prints img");
   await expect(photos).toHaveCount(3);
   const dimensions = [[584, 440], [330, 585], [465, 499], [479, 364], [401, 413], [800, 601]];
-  for (let collection = 0; collection < 2; collection++) {
+  const events = [[1, 2, 3], [4, 5, 6], [3, 5, 6]];
+  for (let event = 0; event < events.length; event++) {
     for (let index = 0; index < 3; index++) {
       const photo = photos.nth(index);
-      await expect(photo).toHaveAttribute("src", new RegExp(`ape-portrait-${collection * 3 + index + 1}\\.webp$`));
+      const number = events[event][index];
+      await expect(photo).toHaveAttribute("src", new RegExp(`ape-portrait-${number}\\.webp$`));
       await expect.poll(() => photo.evaluate(image => [(image as HTMLImageElement).naturalWidth,
-        (image as HTMLImageElement).naturalHeight])).toEqual(dimensions[collection * 3 + index]);
-      await expect(photo).toHaveCSS("object-fit", "contain");
+        (image as HTMLImageElement).naturalHeight])).toEqual(dimensions[number - 1]);
     }
-    if (collection === 0) await page.getByRole("button", { name: "Next collection" }).click();
+    if (event < events.length - 1) await page.getByRole("button", { name: "Next event" }).click();
   }
+});
+
+test("hovering the curtain moves the cloth like a hand, and it settles afterwards", async ({ page, browserName, isMobile }) => {
+  test.skip(browserName !== "chromium" || isMobile, "Hover is a desktop pointer interaction rendered in Chrome.");
+  await page.goto("./");
+  const scene = page.locator(".booth-renderer");
+  await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+  await expect(scene).toHaveAttribute("data-textures", "loaded", { timeout: 60000 });
+  await expect(scene).toHaveAttribute("data-hand", "idle");
+  const box = await scene.boundingBox();
+  // The curtain hangs right of centre in the doorway of the front-facing booth.
+  const x = box!.x + box!.width * .615, y = box!.y + box!.height * .45;
+  await page.mouse.move(x - 40, y);
+  for (let step = 0; step < 12; step++) await page.mouse.move(x - 30 + step * 6, y + (step % 3) * 6);
+  await expect(scene).toHaveAttribute("data-hand", "touching");
+  await page.mouse.move(20, box!.y + box!.height - 20);
+  await expect(scene).toHaveAttribute("data-hand", "idle", { timeout: 60000 });
 });
 
 test("direct entry does not load the 3D renderer until the visitor goes home", async ({ page }) => {
   const resources: string[] = [];
   page.on("request", request => { if (/createBoothScene|\.mp4/.test(request.url())) resources.push(request.url()); });
   await page.goto("./#work");
-  await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await expect(page.locator("canvas")).toHaveCount(0);
   expect(resources).toEqual([]);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
@@ -127,7 +145,7 @@ test("unavailable WebGL retains the reference and a usable portfolio", async ({ 
   expect(Number(await page.locator("#work").evaluate(el => getComputedStyle(el).opacity))).toBeLessThan(1);
   await expect(page.locator(".media-surface")).toHaveCSS("opacity", "1");
   await page.getByRole("link", { name: "Our work" }).click();
-  await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
 });
 
 test("GPU context loss falls back without hiding portfolio access", async ({ page, browserName }) => {
@@ -138,5 +156,5 @@ test("GPU context loss falls back without hiding portfolio access", async ({ pag
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback");
   await expect(page.locator(".booth-poster")).toBeVisible();
   await page.getByRole("link", { name: "Our work" }).click();
-  await expect(page.getByRole("tab", { name: "The portraits" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
 });

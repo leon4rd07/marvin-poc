@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createCurtainMotion, curtainVertex } from "../../src/scene/curtainMotion";
+import { createCurtainMotion, createHandMotion, curtainDrop, curtainVertex } from "../../src/scene/curtainMotion";
 
 describe("soft curtain", () => {
   it("pins the rail but allows the free hem to move", () => {
@@ -51,5 +51,26 @@ describe("soft curtain", () => {
       expect(Math.abs(next.x - current.x)).toBeLessThan(.001);
       expect(Math.abs(next.z - current.z)).toBeLessThan(.001);
     }
+  });
+
+  it("hangs lower than half the doorway and stays clear of the floor", () => {
+    expect(curtainDrop).toBeGreaterThan(2.77 / 2);
+    expect(curtainVertex(.5, 1, 0).y).toBeGreaterThan(.15);
+  });
+  it("is pushed back and swings under a hand, then settles once it leaves", () => {
+    const resting = curtainVertex(.5, .6, 0);
+    const pressed = curtainVertex(.5, .6, 0, 0, 0, { u: .5, v: .6, press: 1, drag: 0 });
+    expect(pressed.z).toBeLessThan(resting.z - .05);
+    // Far from the hand the cloth is untouched, and the rail never moves.
+    expect(curtainVertex(.05, .6, 0, 0, 0, { u: .95, v: .6, press: 1, drag: 0 }).z).toBeCloseTo(curtainVertex(.05, .6, 0).z, 3);
+    expect(curtainVertex(.5, 0, 0, 0, 0, { u: .5, v: 0, press: 1, drag: .4 })).toEqual(curtainVertex(.5, 0, 0));
+    const hand = createHandMotion();
+    for (let step = 0; step < 10; step++) { hand.touch(.3 + step * .04, .5); hand.step(1 / 60); }
+    expect(hand.step(1 / 60).active).toBe(true);
+    hand.leave();
+    let state = hand.step(1 / 60);
+    for (let frame = 0; frame < 600 && state.active; frame++) state = hand.step(1 / 60);
+    expect(state.active).toBe(false);
+    expect(state.press).toBe(0);
   });
 });

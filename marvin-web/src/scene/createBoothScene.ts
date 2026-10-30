@@ -1,10 +1,10 @@
 import {
-  ACESFilmicToneMapping, Mesh, MeshBasicMaterial, PCFSoftShadowMap, PerspectiveCamera,
+  ACESFilmicToneMapping, Mesh, Raycaster, Vector2, MeshBasicMaterial, PCFSoftShadowMap, PerspectiveCamera,
   PlaneGeometry, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from "three";
 import { buildBooth, boothDimensions } from "./buildBooth";
 import { cameraFov, cameraPose, portalView, timeline, type PortalFrame } from "../lib/timeline";
-import { createCurtainMotion } from "./curtainMotion";
+import { createCurtainMotion, createHandMotion } from "./curtainMotion";
 import { createScrollMotion } from "./scrollMotion";
 import { createStudioRig } from "./studioRig";
 
@@ -51,6 +51,37 @@ export function createBoothScene(
   const scrollMotion = createScrollMotion(initialProgress);
   const booth = buildBooth(schedule, { portal: true });
   scene.add(booth.root);
+  // Hover (or tap) on the curtain moves the cloth as if a hand were on it.
+  const hand = createHandMotion();
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
+  let overCurtain = false;
+  function curtainUnder(event: PointerEvent) {
+    // Only while the curtain still hangs closed in front of the booth.
+    if (progress > .03) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) return null;
+    if (event.target instanceof Element && event.target.closest("a, button, nav, header")) return null;
+    pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(booth.curtain, false)[0];
+    return hit?.uv ? { u: hit.uv.x, v: 1 - hit.uv.y } : null;
+  }
+  const onPointerMove = (event: PointerEvent) => {
+    if (event.pointerType === "touch") return;
+    const point = curtainUnder(event);
+    if (point) { hand.touch(point.u, point.v); overCurtain = true; schedule(); }
+    else if (overCurtain) { hand.leave(); overCurtain = false; schedule(); }
+    document.documentElement.style.cursor = point ? "grab" : "";
+  };
+  const onPointerDown = (event: PointerEvent) => {
+    const point = curtainUnder(event);
+    if (point) { hand.touch(point.u, point.v, event.pointerType === "touch" ? 1.6 : .8); schedule(); }
+  };
+  const onPointerLeave = () => { hand.leave(); overCurtain = false; document.documentElement.style.cursor = ""; schedule(); };
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerdown", onPointerDown);
+  document.documentElement.addEventListener("pointerleave", onPointerLeave);
   void booth.ready.then(() => { if (!disposed) { host.dataset.textures = "loaded"; schedule(); } });
   function schedule() {
     if (!disposed && !lost && !scheduled && !document.hidden) scheduled = requestAnimationFrame(render);
@@ -64,9 +95,10 @@ export function createBoothScene(
     const motion = scrollMotion.step(progress, elapsed);
     const pose = timeline(motion.progress);
     const cloth = clothMotion.step(pose.curtain, elapsed);
+    const touch = hand.step(elapsed);
     previousTime = time;
     windTime += Math.max(0, Math.min(elapsed, .05));
-    booth.setCurtain(pose.curtain, cloth.displacement, windTime);
+    booth.setCurtain(pose.curtain, cloth.displacement, windTime, touch);
     const view = cameraPose(motion.progress, distance);
     // Keep eye level fixed during travel; change position, not field of view.
     camera.position.set(view.x, view.y, view.z);
@@ -85,8 +117,9 @@ export function createBoothScene(
     host.dataset.clothMotion = cloth.active ? "settling" : "settled";
     host.dataset.clothDisplacement = cloth.displacement.toFixed(6);
     host.dataset.wind = "breeze";
+    host.dataset.hand = touch.active ? "touching" : "idle";
     host.dataset.windTime = windTime.toFixed(4);
-    motionActive = cloth.active || motion.active;
+    motionActive = cloth.active || motion.active || touch.active;
     schedule();
   }
   function resize() {
@@ -121,6 +154,10 @@ export function createBoothScene(
       observer.disconnect();
       canvas.removeEventListener("webglcontextlost", onContextLost);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      document.documentElement.removeEventListener("pointerleave", onPointerLeave);
+      document.documentElement.style.cursor = "";
       onPortal?.(null);
       booth.dispose();
       backdrop.geometry.dispose();

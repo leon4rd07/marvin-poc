@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import type { EventTheme } from "../data/portfolio";
 import { asset, boothPoster } from "../lib/assets";
 
 type Viewer = { turn(radians: number): void; setOpen(open: boolean): void };
 
-// The booth as a small, playable 3D model. Three.js is loaded only when this
-// view is opened, and released again when the visitor switches away.
-export function BoothModelViewer() {
+// The booth as a small, playable 3D model, dressed in the event's colours. Three.js
+// is loaded only when this view is opened, and released again when it closes.
+export function BoothModelViewer({ theme }: { theme: EventTheme }) {
   const host = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "unavailable">("loading");
@@ -15,10 +16,12 @@ export function BoothModelViewer() {
     if (!container) return;
     let cancelled = false;
     let dispose: (() => void) | undefined;
+    setState("loading");
+    setOpen(false);
     void import("../scene/createBoothViewer").then(({ createBoothViewer }) => {
       if (cancelled) return;
       try {
-        const created = createBoothViewer(container, { autoRotate: !matchMedia("(prefers-reduced-motion: reduce)").matches });
+        const created = createBoothViewer(container, { autoRotate: !matchMedia("(prefers-reduced-motion: reduce)").matches, theme });
         viewer.current = created;
         dispose = created.dispose;
         setState("ready");
@@ -29,7 +32,7 @@ export function BoothModelViewer() {
       viewer.current = null;
       dispose?.();
     };
-  }, []);
+  }, [theme]);
   function toggle() {
     const next = !open;
     setOpen(next);

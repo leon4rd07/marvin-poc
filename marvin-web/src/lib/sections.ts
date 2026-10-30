@@ -1,10 +1,8 @@
-import type { PortfolioTab } from "../data/portfolio";
-
 // Header and in-page links that open the portfolio directly, skipping the entrance.
-const byHash: Record<string, PortfolioTab> = {
-  "#work": "portraits",
+export type Section = "work" | "experience" | "hello";
+const byHash: Record<string, Section> = {
+  "#work": "work",
   "#experience": "experience",
   "#hello": "hello",
 };
-export const sectionFromHash = (hash: string): PortfolioTab | null => byHash[hash] ?? null;
-export const sectionEvent = "marvin:section";
+export const sectionFromHash = (hash: string): Section | null => byHash[hash] ?? null;
