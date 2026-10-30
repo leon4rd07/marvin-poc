@@ -40,6 +40,23 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let gestureFromBelow = false;
     let touchFromBelow = false;
     const below = () => scrollY > range() + 2;
+    // In front of the booth a little scrolling only nudges the camera forward (and it
+    // drifts back when you stop); the full walk-in starts once you have clearly
+    // scrolled in, about three mouse-wheel notches or a short swipe.
+    const enterAt = .2;
+    const wheelPerProgress = 1500;
+    let scrubTimer = 0;
+    let touchProgress = 0;
+    const outside = () => !direct.current && scrollY < range() - 2;
+    function scrubTo(progress: number) {
+      window.scrollTo({ top: clamp(progress) * range(), behavior: "instant" });
+      render();
+    }
+    function releaseScrub() {
+      scrubTimer = 0;
+      const progress = scrollY / range();
+      if (progress > .001 && progress < .999 && !transition) playTransition(progress >= enterAt);
+    }
     let state = timeline(0);
     const root = document.documentElement;
     const range = () => Math.max(1, (journey.current?.offsetHeight ?? 0) - (stage.current?.offsetHeight ?? innerHeight));
@@ -88,6 +105,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       }
     }
     function cancelTransition() {
+      window.clearTimeout(scrubTimer);
       cancelAnimationFrame(transition);
       transition = 0;
       transitionTarget = -1;
@@ -155,6 +173,14 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       event.preventDefault();
       if (transition) { playTransition(down); return; }
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+      if (outside()) {
+        const progress = scrollY / range() + delta / wheelPerProgress;
+        window.clearTimeout(scrubTimer);
+        if (down && progress >= enterAt) { scrubTimer = 0; playTransition(true); return; }
+        scrubTo(progress);
+        scrubTimer = window.setTimeout(releaseScrub, 240);
+        return;
+      }
       if (now - lastWheel > 180 || Math.sign(delta) !== Math.sign(wheelIntent)) wheelIntent = 0;
       lastWheel = now;
       wheelIntent += delta;
@@ -164,6 +190,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     const onTouchStart = (event: TouchEvent) => {
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
       touchFromBelow = below();
+      touchProgress = scrollY / range();
     };
     const onTouchMove = (event: TouchEvent) => {
       if (!touchStart || event.touches.length !== 1) return;
@@ -173,9 +200,20 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (!transition && !handlesDirection(dy > 0)) return;
       if (dy < 0 && !transition && touchFromBelow) return;
       event.preventDefault();
+      if (!transition && outside()) {
+        // The swipe moves the camera with your finger; letting go decides.
+        const progress = touchProgress + (dy - Math.sign(dy) * 12) / (innerHeight * .9);
+        if (progress >= enterAt * 1.6) { touchStart = null; playTransition(true); return; }
+        scrubTo(progress);
+        return;
+      }
       playTransition(dy > 0);
     };
-    const onTouchEnd = () => { touchStart = null; };
+    const onTouchEnd = () => {
+      const scrubbing = touchStart !== null && !transition && outside();
+      touchStart = null;
+      if (scrubbing) releaseScrub();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || target?.isContentEditable

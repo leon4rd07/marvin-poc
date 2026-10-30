@@ -64,7 +64,7 @@ test("entrance animation plays even when the OS requests reduced motion", async 
   await page.goto("./");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.mouse.move(180, 400);
-  await page.mouse.wheel(0, 120);
+  await page.mouse.wheel(0, 400);
   // A timed walk-through, not an instant jump: the page is still mid-transition shortly after the gesture.
   await page.waitForTimeout(400);
   expect(await page.locator("#work").getAttribute("aria-hidden")).toBe("true");
@@ -115,7 +115,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
   const initialCamera = await scene.getAttribute("data-camera");
   await page.mouse.move(180, 400);
   const started = Date.now();
-  await page.mouse.wheel(0, 120);
+  await page.mouse.wheel(0, 400);
   await expect.poll(async () => {
     const opening = Number(await scene.getAttribute("data-curtain"));
     return opening > .02 && opening < 1 && await scene.getAttribute("data-camera") !== initialCamera;
@@ -148,7 +148,7 @@ test("one touch swipe reaches the portfolio", async ({ page, browserName }) => {
   const session = await page.context().newCDPSession(page);
   try {
     await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 180, y: 540 }] });
-    await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 180, y: 400 }] });
+    await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 180, y: 220 }] });
     await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
     await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
@@ -189,5 +189,16 @@ test("scrolling back up from below the monitor stops at the booth instead of lea
   expect(Math.abs(await page.evaluate(() => scrollY) - top)).toBeLessThan(4);
   // A new, deliberate upward scroll leaves the booth.
   await page.mouse.wheel(0, -120);
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
+});
+
+test("a small scroll in front of the booth only nudges the camera and drifts back", async ({ page, browserName, isMobile }) => {
+  test.skip(browserName !== "chromium" || isMobile, "Wheel input with the 3D scene is exercised in desktop Chrome.");
+  await page.goto("./");
+  await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
+  await page.mouse.move(180, 400);
+  await page.mouse.wheel(0, 100);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => scrollY), { timeout: 30000 }).toBe(0);
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
 });
