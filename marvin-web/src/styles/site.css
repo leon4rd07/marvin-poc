@@ -73,42 +73,46 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 :root[data-portal="on"] .stage { z-index: 2; background: transparent; }
 :root[data-portal="on"] .work-scene { z-index: 1; background: transparent; will-change: transform; }
 :root[data-portal="on"] .interior { background: transparent; }
-/* The real booth walls frame the view during the entrance; the drawn room fades in once inside. */
-:root[data-portal="on"] .booth-room { opacity: 0; }
-.booth-room { transition: opacity .6s ease; }
 :root[data-portal="on"] .after { visibility: hidden; }
 
 
 /* ---- Inside the booth -------------------------------------------------------
-   You face the back wall; the monitor hangs on the left wall, seen at an angle.
-   Everything is sized from one unit (--u), so the monitor keeps the same look on a
-   laptop, a desktop and a phone; only the overall scale changes. */
+   A small room drawn with CSS 3D: you are in the middle of it. After the entrance
+   you face the back wall, then turn left to the wall where the monitor hangs.
+   The perspective distance equals half the view width and every wall sits that far
+   away, so the wall you face is drawn at exactly 1:1 (flat, sharp, clickable).
+   Everything on the wall is sized from one unit (--u), so the monitor keeps the
+   same look on a laptop, a desktop and a phone; only the overall scale changes. */
 .interior {
-  --u: min(calc(100vw * .6 / 74), calc((100svh - var(--header) - 24px) / 72));
-  position: relative;
-  overflow: hidden;
-  font-size: var(--u);
-  min-height: var(--stage-height);
-  padding: calc(var(--header) + 1.6em) 0 3em;
-  background: radial-gradient(ellipse 55% 75% at 84% 42%, #f3e9d8, var(--wall) 75%);
+  --room-h: calc(var(--stage-height) - var(--header));
+  --u: min(calc((100vw - 64px) / 74), calc((var(--room-h) - 24px) / 72));
+  position: relative; height: var(--stage-height); padding-top: var(--header); overflow: hidden;
+  font-size: var(--u); background: var(--wall);
 }
-.booth-room { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
-.booth-room::before, .booth-room::after { content: ""; position: absolute; right: 0; left: 70%; }
-.booth-room::before { top: 0; height: 6%; background: linear-gradient(#d9c7a8, #e2d2b8); }
-.booth-room::after { bottom: 0; height: 6%; background: linear-gradient(#ddcbad, #cfbb98); }
-.room-left-wall {
-  position: absolute; inset: 0 30% 0 0;
-  background: linear-gradient(90deg, #d6c3a3, #e1d0b5 75%, #dccaad);
-  clip-path: polygon(0 -2%, 100% 6%, 100% 94%, 0 102%);
+.room-view { position: relative; height: 100%; overflow: hidden; perspective: 50vw; perspective-origin: 50% 50%; }
+.room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); transition: transform 1.8s cubic-bezier(.6, 0, .22, 1); }
+.work-scene[data-turned="true"] .room { transform: translateZ(50vw) rotateY(-90deg); transition-delay: .25s; }
+.room-face { position: absolute; inset: 0; }
+/* Back wall: lit from above, falling off to the plain wall colour at its edges
+   (that edge colour is also what the booth shows through the doorway). */
+.room-back {
+  transform: translateZ(-50vw); backface-visibility: hidden;
+  background: radial-gradient(ellipse 62% 70% at 50% 34%, #f7efe0, var(--wall) 80%);
 }
-.room-corner { position: absolute; left: 70%; top: 6%; bottom: 6%; width: 2px; margin-left: -1px; background: #c9b58f; opacity: .8; }
-.room-light { position: absolute; left: 70%; right: 0; top: 6%; bottom: 6%; background: radial-gradient(ellipse at 40% 30%, #fff8ea99, transparent 65%); }
-.monitor-mount {
-  position: relative; width: 70em; margin-left: max(2.5vw, 2em);
-  display: flex; flex-direction: column; align-items: center;
-  /* Mounted on the left wall: the far (right) edge turns away from you. */
-  transform: perspective(160em) rotateY(14deg); transform-origin: 0 50%;
+/* Left wall, where the monitor hangs: a pool of light above the monitor and
+   darker corners where it meets the back and front walls. */
+.room-left {
+  transform: rotateY(90deg) translateZ(-50vw); backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 8em;
+  background:
+    radial-gradient(ellipse 42% 38% at 50% 0%, #fff7e6d9, transparent 72%),
+    radial-gradient(ellipse 70% 30% at 50% 100%, #b9a27c40, transparent 70%),
+    linear-gradient(90deg, #cdb998, #e5d6bd 18%, #eadcc4 50%, #e5d6bd 82%, #cdb998);
 }
+.room-ceiling, .room-floor { inset: auto; left: 0; top: calc(50% - 50vw); width: 100vw; height: 100vw; }
+.room-ceiling { transform: translateY(calc(var(--room-h) / -2)) rotateX(-90deg); background: radial-gradient(circle, #f6eedf, #e1d1b5 70%); }
+.room-floor { transform: translateY(calc(var(--room-h) / 2)) rotateX(90deg); background: radial-gradient(circle, #dccaaa, #c7b18c 75%); }
+.monitor-mount { position: relative; width: 70em; display: flex; flex-direction: column; align-items: center; }
 .camera {
   position: relative; width: 9.4em; height: 3.6em; margin-bottom: 1.1em; display: flex; justify-content: center; align-items: center;
   border-radius: 1.8em; border: 1px solid #b3b7b9;
@@ -222,10 +226,8 @@ h2 { margin: 0 0 18px; font: 800 clamp(2rem, 3vw, 2.7rem)/1.05 Arial, Helvetica,
 
 
 @media (max-width: 860px) {
-  .interior { --u: calc((100vw - 24px) / 76); padding-bottom: 16em; }
-  .room-left-wall { inset-inline-end: 8%; }
-  .booth-room::before, .booth-room::after, .room-corner, .room-light { left: 92%; }
-  .monitor-mount { margin-inline: 3em auto; transform: perspective(160em) rotateY(7deg); }
+  .interior { --u: min(calc((100vw - 24px) / 72), calc((var(--room-h) - 16px) / 104)); }
+  .room-left { padding-bottom: 14em; }
   .console { width: 86%; }
   .monitor-screen { height: 76em; grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "logo" "views" "stage" "foot"; justify-items: stretch; padding: 1.8em 1.8em 1.2em; row-gap: .8em; }
   .screen-header, .showcase-views { justify-self: center; }

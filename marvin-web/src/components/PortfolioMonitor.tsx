@@ -4,38 +4,43 @@ import { asset } from "../lib/assets";
 import { PortfolioGallery } from "./PortfolioGallery";
 import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 
-// Inside the booth. You face the back wall; the monitor hangs on the left wall,
-// with the camera above it and the console (selfie button and print slot) below.
+// Inside the booth. You first face the back wall, then turn left to the wall where
+// the monitor hangs, with the camera above it and the console (selfie button and
+// print slot) below.
 // Scrolling further leads to the closing section.
 export function PortfolioMonitor() {
   const { prints, flash, snap } = useSelfie();
   return (
     <>
       <div className="interior">
-        <div className="booth-room" aria-hidden="true">
-          <span className="room-left-wall" />
-          <span className="room-corner" />
-          <span className="room-light" />
-        </div>
-        <div className="monitor-mount">
-          <div className="camera" aria-hidden="true" data-snap={flash}>
-            <span className="camera-dot" />
-            <div className="lens"><i /></div>
-            <span>LOOK HERE</span>
-          </div>
-          <div className="monitor-shell">
-            <div className="monitor-screen">
-              <div className="screen-header">
-                <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
+        <div className="room-view">
+          <div className="room">
+            <div className="room-face room-ceiling" aria-hidden="true" />
+            <div className="room-face room-floor" aria-hidden="true" />
+            <div className="room-face room-back" aria-hidden="true" />
+            <div className="room-face room-left">
+              <div className="monitor-mount">
+                <div className="camera" aria-hidden="true" data-snap={flash}>
+                  <span className="camera-dot" />
+                  <div className="lens"><i /></div>
+                  <span>LOOK HERE</span>
+                </div>
+                <div className="monitor-shell">
+                  <div className="monitor-screen">
+                    <div className="screen-header">
+                      <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
+                    </div>
+                    <PortfolioGallery />
+                    {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
+                  </div>
+                </div>
+                <div className="console">
+                  <span className="console-text" aria-hidden="true">GOOD TIMES, ON REPEAT.</span>
+                  <SelfieButton onSnap={snap} />
+                  <PrintSlot prints={prints} />
+                </div>
               </div>
-              <PortfolioGallery />
-              {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
             </div>
-          </div>
-          <div className="console">
-            <span className="console-text" aria-hidden="true">GOOD TIMES, ON REPEAT.</span>
-            <SelfieButton onSnap={snap} />
-            <PrintSlot prints={prints} />
           </div>
         </div>
         <p className="sr-only" role="status">{prints.length > 0 ? "Your photo is printing." : ""}</p>

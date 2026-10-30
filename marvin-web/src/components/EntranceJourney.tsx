@@ -16,7 +16,7 @@ export function EntranceJourney({ homeRef }: {
           <BoothScene surfaceRef={surface} progress={sceneProgress} enabled={sceneEnabled} onPortal={onPortal} />
         </div>
       </section>
-      <section id="work" className="work-scene" ref={work} data-active={initialDirect}
+      <section id="work" className="work-scene" ref={work} data-active={initialDirect} data-turned={initialDirect}
         inert={!initialDirect} aria-hidden={!initialDirect} aria-label="Portfolio monitor">
         <PortfolioMonitor />
       </section>

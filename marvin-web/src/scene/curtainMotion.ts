@@ -29,7 +29,7 @@ export function createCurtainMotion(initialOpening: number) {
 
 // How far the curtain hangs below its rail (metres). The full length reaches the
 // floor (2.77); this leaves a short gap above it.
-export const curtainDrop = 2.45;
+export const curtainDrop = 2.3;
 
 // A hand moving over the cloth. `u`/`v` follow the pointer on the curtain surface,
 // `press` is how firmly it pushes, and `drag` is the sideways swing it leaves behind,

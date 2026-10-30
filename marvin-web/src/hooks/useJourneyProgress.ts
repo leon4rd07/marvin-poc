@@ -67,6 +67,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
         if (!state.interactive && work.current.contains(document.activeElement))
           home.current?.focus({ preventScroll: true });
         work.current.dataset.active = String(state.interactive);
+        // Once inside, turn left to face the monitor (a CSS transition on the room).
+        work.current.dataset.turned = String(state.interactive);
         work.current.inert = !state.interactive;
         work.current.setAttribute("aria-hidden", String(!state.interactive));
       }
@@ -175,6 +177,13 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       } else home.current?.focus({ preventScroll: true });
     };
     const onScroll = () => {
+      // A small programmatic nudge (focus or scroll-into-view inside the room) must
+      // not pull you back out of the booth: snap back to the portfolio. Leaving is
+      // done with the wheel, a swipe, the keyboard or a real scrollbar drag.
+      if (!transition && state.interactive && scrollY < range() - 2 && scrollY > range() * .8) {
+        window.scrollTo({ top: range(), behavior: "instant" });
+        return;
+      }
       if (direct.current && scrollY < range() - 2) {
         direct.current = false;
         setSceneAllowed(true);
