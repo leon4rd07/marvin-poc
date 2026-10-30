@@ -23,7 +23,7 @@ export function PortfolioMonitor() {
                 <div className="camera" aria-hidden="true" data-snap={flash}>
                   <span className="camera-dot" />
                   <div className="lens"><i /></div>
-                  <span>LOOK HERE</span>
+                  <span className="camera-grille">{Array.from({ length: 6 }, (_, index) => <i key={index} />)}</span>
                 </div>
                 <div className="monitor-shell">
                   <div className="monitor-screen">

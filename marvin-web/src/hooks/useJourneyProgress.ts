@@ -27,6 +27,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let frame = 0;
     let transition = 0;
     let transitionTarget = -1;
+    let turningBack = false;
+    const turnBackMs = 950;
     let wheelIntent = 0;
     let lastWheel = 0;
     let ignoreWheelUntil = 0;
@@ -68,7 +70,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
           home.current?.focus({ preventScroll: true });
         work.current.dataset.active = String(state.interactive);
         // Once inside, turn left to face the monitor (a CSS transition on the room).
-        work.current.dataset.turned = String(state.interactive);
+        work.current.dataset.turned = String(state.interactive && !turningBack);
         work.current.inert = !state.interactive;
         work.current.setAttribute("aria-hidden", String(!state.interactive));
       }
@@ -82,6 +84,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       cancelAnimationFrame(transition);
       transition = 0;
       transitionTarget = -1;
+      turningBack = false;
     }
     // The page may still be inert for a frame or two (slower browsers), so keep
     // trying briefly until the focus really lands. "Our work" focuses the first
@@ -104,9 +107,14 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       const start = clamp(scrollY / range());
       let last = performance.now();
       let played = 0;
+      // Leaving from inside: first turn back to face the doorway, then walk out.
+      const holdUntil = !forward && work.current?.dataset.turned === "true" ? last + turnBackMs : 0;
+      turningBack = holdUntil > 0;
+      if (turningBack && work.current) work.current.dataset.turned = "false";
       const duration = reduced ? 0 : Math.max(700, 3600 * Math.abs(destination - start));
       transitionTarget = destination;
       function step(now: number) {
+        if (now < holdUntil) { last = now; transition = requestAnimationFrame(step); return; }
         // A stalled frame (slow device, shader compile) advances the entrance by at
         // most 250 ms, so it never jumps straight to the end.
         played += Math.min(250, Math.max(0, now - last));
@@ -119,6 +127,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
         else {
           transition = 0;
           transitionTarget = -1;
+          turningBack = false;
           ignoreWheelUntil = now + 220;
           if (forward) focusSection("work");
           else home.current?.focus({ preventScroll: true });

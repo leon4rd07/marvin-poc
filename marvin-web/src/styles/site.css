@@ -90,8 +90,11 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
   font-size: var(--u); background: var(--wall);
 }
 .room-view { position: relative; height: 100%; overflow: hidden; perspective: 50vw; perspective-origin: 50% 50%; }
-.room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); transition: transform 1.8s cubic-bezier(.6, 0, .22, 1); }
-.work-scene[data-turned="true"] .room { transform: translateZ(50vw) rotateY(-90deg); transition-delay: .25s; }
+.room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); transition: transform .95s cubic-bezier(.5, 0, .3, 1); }
+.work-scene[data-turned="true"] .room { transform: translateZ(50vw) rotateY(-90deg); transition: transform 1.8s cubic-bezier(.6, 0, .22, 1) .25s; }
+/* While the page is seen through the doorway it always faces the back wall, so the
+   room never shows up as a turned box inside the doorway. */
+:root[data-portal="on"] .room { transform: translateZ(50vw) rotateY(0deg); transition: none; }
 .room-face { position: absolute; inset: 0; }
 /* Back wall: lit from above, falling off to the plain wall colour at its edges
    (that edge colour is also what the booth shows through the doorway). */
@@ -119,8 +122,9 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
   background: linear-gradient(135deg, #f6f7f7, #cbcfd0 68%, #eceeee);
   box-shadow: inset 0 1px 0 #fff, 0 .6em 1.4em #4a3b2430;
 }
-.camera-dot { position: absolute; left: 1.2em; top: 1.55em; width: .4em; height: .4em; border-radius: 50%; background: var(--yellow); }
-.camera > span:last-child { position: absolute; right: .9em; color: #5d6063; font-size: .42em; letter-spacing: .15em; writing-mode: vertical-rl; }
+.camera-dot { position: absolute; left: 1.3em; top: 50%; translate: 0 -50%; width: .45em; height: .45em; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 .35em #f1cd3c99; }
+.camera-grille { position: absolute; right: 1.15em; top: 50%; translate: 0 -50%; display: grid; grid-template-columns: repeat(3, .28em); gap: .22em; }
+.camera-grille i { width: .28em; height: .28em; border-radius: 50%; background: #9a9ea1; box-shadow: inset 0 .05em .05em #0004; }
 .lens { width: 2.8em; height: 2.8em; border: .24em solid #6c7073; border-radius: 50%; background: radial-gradient(circle, #1a2a31 0 15%, #4e6a72 16% 19%, #0b1517 20% 32%, #26383a 33% 38%, #0f1614 39% 54%, #8b9396 55% 60%, #1f2624 61%); box-shadow: 0 .2em .4em #0004; }
 .lens i { display: block; width: .5em; height: .3em; border-radius: 50%; background: #d6e9d977; margin: .6em; }
 /* A thin silver monitor with an even bezel, as in the reference. */
