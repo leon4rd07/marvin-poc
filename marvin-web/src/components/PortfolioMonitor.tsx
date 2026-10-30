@@ -42,6 +42,7 @@ export function PortfolioMonitor() {
             </div>
           </div>
         </div>
+        <div className="leave-hint" aria-hidden="true"><span>↑</span> Keep scrolling up to step outside</div>
         {flash > 0 && <div className="camera-flash" key={flash} aria-hidden="true" />}
         <p className="sr-only" role="status">{prints.some(print => !print.closing) ? "Your photo is printing." : ""}</p>
       </div>

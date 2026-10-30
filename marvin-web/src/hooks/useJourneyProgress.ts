@@ -48,6 +48,21 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let scrubTimer = 0;
     let touchProgress = 0;
     const outside = () => !direct.current && scrollY < range() - 2;
+    // Inside the booth, scrolling up meets some resistance: the wall gives a little
+    // and a hint appears; you only step back outside after a firm, continuous push.
+    const leaveAt = 380;
+    let pull = 0;
+    let pullTimer = 0;
+    function setPull(value: number) {
+      pull = Math.max(0, value);
+      work.current?.style.setProperty("--pull", Math.min(1, pull / leaveAt).toFixed(3));
+    }
+    function pullBy(amount: number) {
+      window.clearTimeout(pullTimer);
+      setPull(pull + amount);
+      if (pull >= leaveAt) { setPull(0); playTransition(false); return; }
+      pullTimer = window.setTimeout(() => setPull(0), 320);
+    }
     function scrubTo(progress: number) {
       window.scrollTo({ top: clamp(progress) * range(), behavior: "instant" });
       render();
@@ -106,6 +121,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     }
     function cancelTransition() {
       window.clearTimeout(scrubTimer);
+      window.clearTimeout(pullTimer);
       cancelAnimationFrame(transition);
       transition = 0;
       transitionTarget = -1;
@@ -181,11 +197,11 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
         scrubTimer = window.setTimeout(releaseScrub, 240);
         return;
       }
+      if (!down) { pullBy(-delta); return; }
       if (now - lastWheel > 180 || Math.sign(delta) !== Math.sign(wheelIntent)) wheelIntent = 0;
       lastWheel = now;
       wheelIntent += delta;
-      // Leaving the booth asks for a slightly firmer push than entering it.
-      if (Math.abs(wheelIntent) >= (down ? 10 : 60)) { wheelIntent = 0; playTransition(down); }
+      if (Math.abs(wheelIntent) >= 10) { wheelIntent = 0; playTransition(down); }
     };
     const onTouchStart = (event: TouchEvent) => {
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
@@ -207,11 +223,19 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
         scrubTo(progress);
         return;
       }
+      if (!transition && dy < 0) {
+        // Pulling down inside the booth: resistance first, as with the wheel.
+        window.clearTimeout(pullTimer);
+        setPull((-dy - 12) * 1.3);
+        if (pull >= leaveAt) { touchStart = null; setPull(0); playTransition(false); }
+        return;
+      }
       playTransition(dy > 0);
     };
     const onTouchEnd = () => {
       const scrubbing = touchStart !== null && !transition && outside();
       touchStart = null;
+      if (pull > 0) setPull(0);
       if (scrubbing) releaseScrub();
     };
     const onKeyDown = (event: KeyboardEvent) => {
