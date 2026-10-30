@@ -92,16 +92,19 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 .room-view {
   position: relative; height: 100%; overflow: hidden; perspective: 50vw; perspective-origin: 50% 50%;
   /* Resistance when scrolling up inside: the room eases down a little as you push. */
-  transform: translateY(calc(var(--pull, 0) * 3em)); transition: transform .35s cubic-bezier(.2, .8, .2, 1);
+  transform: translateY(calc(var(--pull, 0) * 2em)); transition: transform .35s cubic-bezier(.2, .8, .2, 1);
 }
+/* "Step outside": appears when you scroll up against the top of the booth
+   (or when it gets keyboard focus) and walks you back out when pressed. */
 .leave-hint {
-  position: absolute; z-index: 5; left: 50%; top: calc(var(--header) + 1em); translate: -50% 0;
-  display: flex; align-items: center; gap: .6rem; padding: .55rem 1rem; border-radius: 999px;
-  background: #1d1f1ae6; color: var(--paper); font-size: .75rem; letter-spacing: .04em; white-space: nowrap;
-  opacity: clamp(0, calc(var(--pull, 0) * 3), 1); transform: scale(calc(.9 + var(--pull, 0) * .1)); pointer-events: none;
-  transition: opacity .25s ease;
+  position: absolute; z-index: 5; left: max(20px, 3vw); top: calc(var(--header) + 18px);
+  display: flex; align-items: center; gap: .55rem; min-height: 40px; padding: 0 1.1rem; border: 0; border-radius: 999px;
+  background: #1d1f1ae6; color: var(--paper); font-size: .8125rem; letter-spacing: .03em; white-space: nowrap;
+  opacity: 0; transform: translateY(-.4rem); pointer-events: none; transition: opacity .25s ease, transform .25s ease, background .16s ease;
 }
-.leave-hint span { display: inline-block; transform: translateY(calc(var(--pull, 0) * -2px)); color: var(--yellow); }
+.work-scene[data-leave-hint="true"] .leave-hint, .leave-hint:focus-visible { opacity: 1; transform: none; pointer-events: auto; }
+.leave-hint:hover { background: var(--ink); }
+.leave-hint span { color: var(--yellow); }
 .room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); transition: transform .95s cubic-bezier(.5, 0, .3, 1); }
 .work-scene[data-turned="true"] .room { transform: translateZ(50vw) rotateY(-90deg); transition: transform 1.8s cubic-bezier(.6, 0, .22, 1) .25s; }
 /* While the page is seen through the doorway it always faces the back wall, so the

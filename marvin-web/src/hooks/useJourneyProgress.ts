@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/timeline";
-import { sectionFromHash, type Section } from "../lib/sections";
+import { leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
 export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
@@ -48,20 +48,27 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     let scrubTimer = 0;
     let touchProgress = 0;
     const outside = () => !direct.current && scrollY < range() - 2;
-    // Inside the booth, scrolling up meets some resistance: the wall gives a little
-    // and a hint appears; you only step back outside after a firm, continuous push.
-    const leaveAt = 380;
+    // Inside the booth, scrolling up is a wall: it never walks you out (trackpads
+    // and long scrolls made that far too easy). The view gives a little and the
+    // "Step outside" button shows; that button (or the logo, PageUp) leaves.
+    const pullRange = 260;
     let pull = 0;
     let pullTimer = 0;
+    let hintTimer = 0;
     function setPull(value: number) {
-      pull = Math.max(0, value);
-      work.current?.style.setProperty("--pull", Math.min(1, pull / leaveAt).toFixed(3));
+      pull = Math.max(0, Math.min(pullRange, value));
+      work.current?.style.setProperty("--pull", (pull / pullRange).toFixed(3));
+    }
+    function showLeaveHint() {
+      window.clearTimeout(hintTimer);
+      if (work.current) work.current.dataset.leaveHint = "true";
+      hintTimer = window.setTimeout(() => { if (work.current) delete work.current.dataset.leaveHint; }, 2600);
     }
     function pullBy(amount: number) {
       window.clearTimeout(pullTimer);
       setPull(pull + amount);
-      if (pull >= leaveAt) { setPull(0); playTransition(false); return; }
-      pullTimer = window.setTimeout(() => setPull(0), 320);
+      showLeaveHint();
+      pullTimer = window.setTimeout(() => setPull(0), 220);
     }
     function scrubTo(progress: number) {
       window.scrollTo({ top: clamp(progress) * range(), behavior: "instant" });
@@ -226,8 +233,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (!transition && dy < 0) {
         // Pulling down inside the booth: resistance first, as with the wheel.
         window.clearTimeout(pullTimer);
-        setPull((-dy - 12) * 1.3);
-        if (pull >= leaveAt) { touchStart = null; setPull(0); playTransition(false); }
+        setPull((-dy - 12) * .8);
+        showLeaveHint();
         return;
       }
       playTransition(dy > 0);
@@ -311,6 +318,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     addEventListener("hashchange", navigate);
     addEventListener("pageshow", onPageShow);
     addEventListener("click", onClick);
+    const onLeave = () => { setPull(0); playTransition(false); };
+    addEventListener(leaveEvent, onLeave);
     if (!initialized.current && direct.current) navigate();
     else if (reduced && scrollY > 0 && !direct.current) {
       direct.current = true;
@@ -335,6 +344,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       removeEventListener("hashchange", navigate);
       removeEventListener("pageshow", onPageShow);
       removeEventListener("click", onClick);
+      removeEventListener(leaveEvent, onLeave);
+      window.clearTimeout(hintTimer);
     };
   }, [home, reduced, initialDirect, sceneProgress]);
   return { journey, stage, surface, work, initialDirect, sceneProgress, onPortal, sceneEnabled: sceneAllowed && !reduced };

@@ -1,6 +1,7 @@
 import { closing, contact } from "../data/portfolio";
 import { useSelfie } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
+import { leaveEvent } from "../lib/sections";
 import { PortfolioGallery } from "./PortfolioGallery";
 import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 
@@ -42,7 +43,9 @@ export function PortfolioMonitor() {
             </div>
           </div>
         </div>
-        <div className="leave-hint" aria-hidden="true"><span>↑</span> Keep scrolling up to step outside</div>
+        <button type="button" className="leave-hint" onClick={() => window.dispatchEvent(new Event(leaveEvent))}>
+          <span aria-hidden="true">↑</span> Step outside
+        </button>
         {flash > 0 && <div className="camera-flash" key={flash} aria-hidden="true" />}
         <p className="sr-only" role="status">{prints.some(print => !print.closing) ? "Your photo is printing." : ""}</p>
       </div>
@@ -51,7 +54,7 @@ export function PortfolioMonitor() {
           <p className="eyebrow">{closing.eyebrow}</p>
           <h2 id="closing-title" tabIndex={-1}>{closing.heading}</h2>
           <div className="closing-actions">
-            <a className="closing-primary" href="#home" data-nav>{closing.again} <span aria-hidden="true">↺</span></a>
+            <a className="closing-primary" href="#home" onClick={event => { event.preventDefault(); window.dispatchEvent(new Event(leaveEvent)); }}>{closing.again} <span aria-hidden="true">↺</span></a>
             {contact.action && <a className="closing-link" href={contact.action.href}>{closing.hello}</a>}
           </div>
           <p className="closing-note">{closing.notice}</p>

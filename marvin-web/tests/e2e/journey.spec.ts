@@ -125,7 +125,11 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await page.getByRole("link", { name: "Our work" }).click();
   await page.mouse.move(180, 400);
+  // Scrolling up inside is a wall; the Step outside button walks you back out.
   await page.mouse.wheel(0, -400);
+  await expect(page.getByRole("button", { name: "Step outside" })).toBeVisible();
+  // The hint fades after a few seconds; slow CI can miss that window for a real click.
+  await page.getByRole("button", { name: "Step outside" }).dispatchEvent("click");
   await expect(
     page.getByRole("link", { name: "Marvin Studio home" }),
   ).toBeFocused();
@@ -187,8 +191,11 @@ test("scrolling back up from below the monitor stops at the booth instead of lea
   await page.waitForTimeout(600);
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
   expect(Math.abs(await page.evaluate(() => scrollY) - top)).toBeLessThan(4);
-  // A new, deliberate upward scroll leaves the booth.
+  // Even a new, firm upward scroll does not leave; the button does.
   await page.mouse.wheel(0, -400);
+  await page.waitForTimeout(600);
+  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
+  await page.getByRole("button", { name: "Step outside" }).dispatchEvent("click");
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
 });
 
@@ -203,20 +210,17 @@ test("a small scroll in front of the booth only nudges the camera and drifts bac
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
 });
 
-test("inside the booth a small scroll up meets resistance instead of leaving", async ({ page, isMobile }) => {
+test("inside the booth scrolling up never leaves; it shows Step outside, which does", async ({ page, isMobile }) => {
   test.skip(isMobile, "Wheel input is exercised on desktop.");
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
   await page.waitForTimeout(400);
   await page.mouse.move(700, 500);
-  await page.mouse.wheel(0, -100);
-  await expect.poll(() => page.locator("#work").evaluate(work => Number(work.style.getPropertyValue("--pull")))).toBeGreaterThan(0);
-  await expect(page.locator(".leave-hint")).not.toHaveCSS("opacity", "0");
+  for (let step = 0; step < 12; step++) { await page.mouse.wheel(0, -200); await page.waitForTimeout(30); }
+  await expect(page.locator(".leave-hint")).toHaveCSS("opacity", "1");
+  await page.waitForTimeout(800);
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
-  // Letting go springs back.
   await expect.poll(() => page.locator("#work").evaluate(work => Number(work.style.getPropertyValue("--pull")))).toBe(0);
-  await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
-  // A firm push leaves.
-  await page.mouse.wheel(0, -400);
+  await page.getByRole("button", { name: "Step outside" }).dispatchEvent("click");
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "true");
 });
