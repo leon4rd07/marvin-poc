@@ -1,55 +1,46 @@
-import { closing, contact, experience } from "../data/portfolio";
+import { closing, contact } from "../data/portfolio";
+import { useSelfie } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
 import { PortfolioGallery } from "./PortfolioGallery";
-import { useSelfie } from "../hooks/useSelfie";
-import { PrinterTray, SelfieButton } from "./SelfiePrinter";
+import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 
-// Inside the booth: the monitor sits on the left wall, the printer on the right.
-// Scrolling further goes down to the experience and the closing call to action.
+// Inside the booth. You face the back wall; the monitor hangs on the left wall,
+// with the camera above it and the console (selfie button and print slot) below.
+// Scrolling further leads to the closing section.
 export function PortfolioMonitor() {
   const { prints, flash, snap } = useSelfie();
   return (
     <>
       <div className="interior">
-        <div className="room">
-          <div className="monitor-column">
-            <div className="camera" aria-hidden="true" data-snap={flash}>
-              <span className="camera-dot" />
-              <div className="lens"><i /></div>
-              <span>LOOK HERE</span>
-            </div>
-            <div className="monitor-shell">
-              <div className="monitor-screen">
-                <div className="screen-header">
-                  <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
-                </div>
-                <PortfolioGallery />
-                {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
+        <div className="booth-room" aria-hidden="true">
+          <span className="room-left-wall" />
+          <span className="room-corner" />
+          <span className="room-light" />
+        </div>
+        <div className="monitor-mount">
+          <div className="camera" aria-hidden="true" data-snap={flash}>
+            <span className="camera-dot" />
+            <div className="lens"><i /></div>
+            <span>LOOK HERE</span>
+          </div>
+          <div className="monitor-shell">
+            <div className="monitor-screen">
+              <div className="screen-header">
+                <img className="screen-logo" src={asset("textures/marvin-wordmark.png")} alt="Marvin" width={1098} height={227} />
               </div>
-              <div className="monitor-base" aria-hidden="true"><i /></div>
-            </div>
-            <div className="console">
-              <SelfieButton onSnap={snap} />
-              <div className="console-line" aria-hidden="true" />
+              <PortfolioGallery />
+              {flash > 0 && <div className="screen-flash" key={flash} aria-hidden="true" />}
             </div>
           </div>
-          <PrinterTray prints={prints} />
+          <div className="console">
+            <span className="console-text" aria-hidden="true">GOOD TIMES, ON REPEAT.</span>
+            <SelfieButton onSnap={snap} />
+            <PrintSlot prints={prints} />
+          </div>
         </div>
         <p className="sr-only" role="status">{prints.length > 0 ? "Your photo is printing." : ""}</p>
       </div>
       <div className="after">
-        <section id="experience" className="experience" aria-labelledby="experience-title">
-          <p className="eyebrow">A MOMENT, JUST FOR YOU</p>
-          <h2 id="experience-title" tabIndex={-1}>{experience.heading}</h2>
-          <ol className="experience-steps">
-            {experience.steps.map((step, index) => (
-              <li key={step.title}>
-                <span aria-hidden="true">0{index + 1}</span>
-                <div><h3>{step.title}</h3><p>{step.description}</p></div>
-              </li>
-            ))}
-          </ol>
-        </section>
         <section id="hello" className="closing" aria-labelledby="closing-title">
           <p className="eyebrow">{closing.eyebrow}</p>
           <h2 id="closing-title" tabIndex={-1}>{closing.heading}</h2>

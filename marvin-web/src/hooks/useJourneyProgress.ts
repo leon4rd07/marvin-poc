@@ -83,9 +83,9 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     }
     // The page may still be inert for a frame or two (slower browsers), so keep
     // trying briefly until the focus really lands. "Our work" focuses the first
-    // view option on the monitor; the other sections scroll into view first.
+    // view option on the monitor; "Say hello" scrolls to the closing section first.
     function focusSection(section: Section, attempt = 0) {
-      const lower = section === "experience" || section === "hello";
+      const lower = section === "hello";
       const target = lower
         ? work.current?.querySelector<HTMLElement>(`#${section} h2`)
         : work.current?.querySelector<HTMLElement>('.showcase-views button[aria-pressed="true"]');

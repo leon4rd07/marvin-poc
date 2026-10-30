@@ -29,7 +29,7 @@ export function createCurtainMotion(initialOpening: number) {
 
 // How far the curtain hangs below its rail (metres). The full length reaches the
 // floor (2.77); this leaves a short gap above it.
-export const curtainDrop = 2.2;
+export const curtainDrop = 2.45;
 
 // A hand moving over the cloth. `u`/`v` follow the pointer on the curtain surface,
 // `press` is how firmly it pushes, and `drag` is the sideways swing it leaves behind,
@@ -101,7 +101,10 @@ export function curtainVertex(u: number, v: number, opening: number, sway = 0, w
   const gust = Math.sin(windTime * .72 + u * 2.4 - v * 1.1)
     + .3 * Math.sin(windTime * .43 - u * 3 + v * 2);
   // Under a hand the cloth is pushed back, bunches sideways around it and swings.
-  const reach = (1 - opening * .75) * Math.min(1, v * 3.2);
+  // The side edges stay against the door jambs (the cloth would hit them), so the
+  // push and swing fade out towards both edges instead of sliding behind the frame.
+  const edge = Math.min(1, u / .2, (1 - u) / .2) ** 2;
+  const reach = (1 - opening * .75) * Math.min(1, v * 3.2) * edge;
   const grip = hand.press > 0 ? hand.press * reach
     * Math.exp(-((u - hand.u) ** 2) / (2 * .17 ** 2) - ((v - hand.v) ** 2) / (2 * .27 ** 2)) : 0;
   const swing = hand.drag * reach * (.35 + .65 * v) * (1 - opening * .6);
@@ -110,11 +113,11 @@ export function curtainVertex(u: number, v: number, opening: number, sway = 0, w
     + .006 * Math.sin(windTime * 1.03 - u * 4 + v * 2.2));
   return {
     x: .44 + rail * width + flare + drape + movement * Math.sin(u * Math.PI / 2) + windX
-      + (u - hand.u) * grip * .2 + swing * .2,
+      + (u - hand.u) * grip * .14 + swing * .12,
     y: 2.99 - v * curtainDrop - .018 * Math.sin(u * Math.PI * 12) ** 2 * (1 - v)
       + (.009 * Math.cos(foldPhase + .5) + .016 * Math.sin(u * 19) + .018 * Math.sin(u * 7 + 1)) * v ** 8
       + Math.abs(movement) * .18 + breeze * .004 * Math.sin(windTime * .72 + u * 2) + grip * .035,
-    z: .87 + fold * amplitude * (.65 + .35 * v) * (1 + grip * .9) - grip * .17
+    z: .87 + fold * amplitude * (.65 + .35 * v) * (1 + grip * .6) - grip * .1
       + .012 * Math.sin(v * 8 + u * 11) * v + movement * Math.sin(v * 4 + u * 7) + windZ,
   };
 }

@@ -12,8 +12,6 @@ test("long content and enlarged text remain reachable at 320 pixels", async ({ p
   })).toBe(true);
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).toHaveText("Padel Night");
-  await page.locator(".experience-steps li").last().scrollIntoViewIfNeeded();
-  await expect(page.locator(".experience-steps li").last()).toBeInViewport();
   await page.locator(".closing-note").scrollIntoViewIfNeeded();
   await expect(page.locator(".closing-note")).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -24,8 +22,6 @@ test("event selection survives navigation and the header links focus the matchin
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).toHaveText("Padel Night");
   if (!isMobile) {
-    await page.getByRole("link", { name: "The experience" }).click();
-    await expect(page.getByRole("heading", { name: /Close the curtain/ })).toBeFocused();
     await page.getByRole("link", { name: "Say hello" }).click();
     await expect(page.getByRole("heading", { name: /Some moments deserve/ })).toBeFocused();
   }

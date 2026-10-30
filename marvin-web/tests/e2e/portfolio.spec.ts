@@ -5,8 +5,6 @@ test("header links open the matching part of the portfolio", async ({ page, isMo
   await page.goto("./");
   await page.getByRole("link", { name: "Our work" }).click();
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await page.getByRole("link", { name: "The experience" }).click();
-  await expect(page.getByRole("heading", { name: /Close the curtain/ })).toBeFocused();
   await page.getByRole("link", { name: "Say hello" }).click();
   await expect(page.getByRole("heading", { name: /Some moments deserve/ })).toBeFocused();
 });
@@ -38,14 +36,28 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
   }
 });
 
-test("the selfie button prints a photo out of the slot", async ({ page }) => {
+test("the selfie button prints a photo out of the console's slot", async ({ page }) => {
   await page.goto("./#work");
-  await expect(page.locator(".print-card")).toHaveCount(0);
+  const papers = page.locator(".console .paper-feed .paper");
+  await expect(papers).toHaveCount(0);
   await page.getByRole("button", { name: "Selfie" }).click();
-  await expect(page.locator(".print-card")).toHaveCount(1);
-  await expect(page.locator(".print-card img")).toBeVisible();
+  await expect(papers).toHaveCount(1);
+  await expect(papers.locator("img")).toBeVisible();
+  // The paper hangs from the slot line, below it.
+  const slot = await page.locator(".slot-line").boundingBox();
+  await expect.poll(async () => (await papers.first().boundingBox())!.y + (await papers.first().boundingBox())!.height)
+    .toBeGreaterThan(slot!.y + slot!.height + 20);
   await page.getByRole("button", { name: "Selfie" }).click();
-  await expect(page.locator(".print-card")).toHaveCount(2);
+  // The new print replaces the old one, which drops away.
+  await expect(papers).toHaveCount(2);
+  await page.getByRole("button", { name: "Selfie" }).click();
+  await expect(papers).toHaveCount(2);
+});
+
+test("only the closing section follows the booth wall", async ({ page }) => {
+  await page.goto("./#work");
+  await expect(page.locator(".after > section")).toHaveCount(1);
+  await expect(page.locator("#experience")).toHaveCount(0);
 });
 
 test("scrolling down the booth wall reaches the closing section", async ({ page }) => {

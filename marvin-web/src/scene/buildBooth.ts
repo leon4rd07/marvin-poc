@@ -6,6 +6,7 @@ import {
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { asset } from "../lib/assets";
 import { curtainDrop, curtainVertex, noHand, type Hand } from "./curtainMotion";
+import { portraits } from "../data/portfolio";
 
 export const boothDimensions = { width: 3.2, height: 4.04, doorLeft: .43, doorRight: 1.43, eyeHeight: 1.7 };
 
@@ -35,38 +36,72 @@ function surfaceGrain() {
 // doorway exactly where the wall would be (and nowhere else).
 export type BoothTheme = { curtain?: string; sign?: string; sheen?: string };
 
-// A softly lit "how it works" board that replaces the old photo wall: it tells
-// visitors what the booth does, in the Marvin voice.
-function guideBoard() {
+// A lit sample display of three photo strips, as on a classic photobooth: two in
+// colour, one in black and white. Drawn once into a canvas when the photos load.
+function photoStripBoard(sources: readonly string[], onReady: () => void) {
   const canvas = document.createElement("canvas");
-  canvas.width = 640; canvas.height = 780;
+  canvas.width = 720; canvas.height = 880;
   const g = canvas.getContext("2d")!;
-  const paperGradient = g.createLinearGradient(0, 0, 0, 780);
-  paperGradient.addColorStop(0, "#fffdf4"); paperGradient.addColorStop(1, "#f4ecd6");
-  g.fillStyle = paperGradient; g.fillRect(0, 0, 640, 780);
-  g.strokeStyle = "#cdb779"; g.lineWidth = 6; g.strokeRect(28, 28, 584, 724);
-  g.strokeStyle = "#e5d7ab"; g.lineWidth = 2; g.strokeRect(44, 44, 552, 692);
-  g.fillStyle = "#1c1c18"; g.textAlign = "center";
-  g.font = "600 26px Helvetica, Arial, sans-serif";
-  g.fillText("S T I L L   M O M E N T S", 320, 118);
-  g.font = "900 78px Helvetica, Arial, sans-serif";
-  g.fillText("Smile,", 320, 214);
-  g.fillText("it’s on us.", 320, 296);
-  g.fillStyle = "#c9a227"; g.font = "56px Helvetica, Arial, sans-serif";
-  g.fillText("✳", 320, 372);
-  const steps = [["01", "Step inside"], ["02", "Pull the curtain"], ["03", "Pose and smile"], ["04", "Keep your prints"]];
-  steps.forEach(([number, label], index) => {
-    const y = 456 + index * 68;
-    g.fillStyle = "#c9a227"; g.textAlign = "left"; g.font = "800 28px Helvetica, Arial, sans-serif";
-    g.fillText(number, 92, y);
-    g.fillStyle = "#1c1c18"; g.font = "600 34px Helvetica, Arial, sans-serif";
-    g.fillText(label, 160, y);
-    if (index < steps.length - 1) { g.fillStyle = "#e5d7ab"; g.fillRect(92, y + 24, 456, 2); }
-  });
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.anisotropy = 4;
-  return texture;
+  function backdrop() {
+    const light = g.createRadialGradient(360, 360, 60, 360, 440, 620);
+    light.addColorStop(0, "#fffaf0"); light.addColorStop(1, "#efe1c2");
+    g.fillStyle = light; g.fillRect(0, 0, 720, 880);
+  }
+  function cover(image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const sw = width / scale, sh = height / scale;
+    g.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, width, height);
+  }
+  function draw(images: HTMLImageElement[]) {
+    backdrop();
+    const strips = [
+      { x: 132, y: 452, angle: -.07, frames: [0, 2, 3, 4], mono: false },
+      { x: 360, y: 430, angle: .025, frames: [5, 1, 4, 0], mono: true },
+      { x: 588, y: 455, angle: .075, frames: [2, 3, 0, 5], mono: false },
+    ];
+    const width = 172, frameHeight = 160, gap = 10, pad = 12, foot = 46;
+    const height = pad + strips[0].frames.length * (frameHeight + gap) - gap + foot;
+    for (const strip of strips) {
+      g.save();
+      g.translate(strip.x, strip.y);
+      g.rotate(strip.angle);
+      g.shadowColor = "rgba(60, 45, 20, .32)"; g.shadowBlur = 22; g.shadowOffsetY = 10;
+      g.fillStyle = "#fffefb";
+      g.fillRect(-width / 2, -height / 2, width, height);
+      g.shadowColor = "transparent";
+      g.filter = strip.mono ? "grayscale(1) contrast(1.08)" : "saturate(.9)";
+      strip.frames.forEach((frame, index) => {
+        const image = images[frame % images.length];
+        const top = -height / 2 + pad + index * (frameHeight + gap);
+        if (image) cover(image, -width / 2 + pad, top, width - pad * 2, frameHeight);
+        else { g.fillStyle = "#e6dcc6"; g.fillRect(-width / 2 + pad, top, width - pad * 2, frameHeight); }
+      });
+      g.filter = "none";
+      g.fillStyle = "#1c1c18"; g.textAlign = "center";
+      g.font = "800 22px Helvetica, Arial, sans-serif";
+      g.fillText("marvin ✳", 0, height / 2 - 15);
+      g.restore();
+    }
+    // A faint diagonal reflection, as on the glass of a real display.
+    const glare = g.createLinearGradient(0, 0, 720, 880);
+    glare.addColorStop(0, "rgba(255,255,255,.18)"); glare.addColorStop(.35, "rgba(255,255,255,0)");
+    glare.addColorStop(.6, "rgba(255,255,255,0)"); glare.addColorStop(.7, "rgba(255,255,255,.1)"); glare.addColorStop(.8, "rgba(255,255,255,0)");
+    g.fillStyle = glare; g.fillRect(0, 0, 720, 880);
+    texture.needsUpdate = true;
+  }
+  draw([]);
+  const images = sources.map(source => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = source;
+    return image;
+  });
+  const loaded = Promise.all(images.map(image => image.decode().then(() => image, () => null)))
+    .then(results => { draw(results.filter((image): image is HTMLImageElement => image !== null)); onReady(); });
+  return { texture, loaded };
 }
 
 export function buildBooth(invalidate: () => void, { portal = false, theme = {} as BoothTheme } = {}) {
@@ -261,13 +296,14 @@ export function buildBooth(invalidate: () => void, { portal = false, theme = {} 
 
   const displayScale = 1.3;
   const displayY = 2.37;
-  const board = guideBoard();
-  textures.add(board);
-  box("Guide board backing", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
+  const board = photoStripBoard(portraits.map(portrait => asset(portrait.src)), () => { if (!disposed) invalidate(); });
+  textures.add(board.texture);
+  textureLoads.push(board.loaded);
+  box("Photo strip display backing", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
     new MeshStandardMaterial({ color: "#f2e7c6", roughness: .8 }));
-  frame("Guide board frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
-  plane("Guide board — how it works", .83 * displayScale, 1.02 * displayScale, displayX, displayY, .832,
-    new MeshBasicMaterial({ map: board, toneMapped: false }));
+  frame("Photo strip display frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
+  plane("Photo strip display — sample prints", .83 * displayScale, 1.02 * displayScale, displayX, displayY, .832,
+    new MeshBasicMaterial({ map: board.texture, toneMapped: false }));
 
   const printerPhoto = "textures/printer-reference.jpg";
   // Match the main reference: compact empty metal recess and a narrow upper

@@ -1,11 +1,8 @@
-import type { CSSProperties } from "react";
 import { portfolioLabels } from "../data/portfolio";
 import type { Print } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
 
-
-// The selfie button under the monitor and the printer beside it. Pressing the
-// button flashes the screen and prints a portrait photo out of the slot.
+// The yellow button in the middle of the console takes the selfie.
 export function SelfieButton({ onSnap }: { onSnap: () => void }) {
   return (
     <button type="button" className="selfie-button" onClick={onSnap}>
@@ -15,16 +12,15 @@ export function SelfieButton({ onSnap }: { onSnap: () => void }) {
   );
 }
 
-export function PrinterTray({ prints }: { prints: readonly Print[] }) {
+// The black line on the console is the print slot: paper feeds out of it and
+// hangs below the console; the previous print drops away.
+export function PrintSlot({ prints }: { prints: readonly Print[] }) {
   return (
-    <div className="printer">
-      <div className="printer-body" aria-hidden="true">
-        <span className="printer-light" />
-        <span className="printer-slot" />
-      </div>
-      <div className="printer-tray">
+    <div className="print-slot">
+      <span className="slot-line" aria-hidden="true" />
+      <div className="paper-feed">
         {prints.map(print => (
-          <figure className="print-card" key={print.id} style={{ "--tilt": `${print.tilt}deg` } as CSSProperties}>
+          <figure className="paper" key={print.id}>
             <img src={asset(print.photo.src)} alt={print.photo.alt} width={print.photo.width} height={print.photo.height} />
             <figcaption>{portfolioLabels.printSignature}<span aria-hidden="true"> ✳</span></figcaption>
           </figure>

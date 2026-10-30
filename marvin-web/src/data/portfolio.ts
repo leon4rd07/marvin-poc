@@ -63,15 +63,6 @@ export const showcaseViews = [
   { id: "video", label: "Video" },
 ] as const;
 export type ShowcaseView = (typeof showcaseViews)[number]["id"];
-export const experience = {
-  heading: "Close the curtain.\nOpen up a little.",
-  description: "A concept for a small, private space where the best photo is the one that feels like you.",
-  steps: [
-    { title: "Step inside", description: "Your people. A little privacy. A moment of your own." },
-    { title: "Find your face", description: "The big smile, the silly one, the perfectly imperfect one." },
-    { title: "Keep a moment", description: "A small reminder of a very good time." },
-  ],
-};
 export type ContactAction = {
   label: string;
   href: `mailto:${string}` | `https://${string}`;
