@@ -96,12 +96,9 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
    room never shows up as a turned box inside the doorway. */
 :root[data-portal="on"] .room { transform: translateZ(50vw) rotateY(0deg); transition: none; }
 .room-face { position: absolute; inset: 0; }
-/* Back wall: lit from above, falling off to the plain wall colour at its edges
-   (that edge colour is also what the booth shows through the doorway). */
-.room-back {
-  transform: translateZ(-50vw); backface-visibility: hidden;
-  background: radial-gradient(ellipse 62% 70% at 50% 34%, #f7efe0, var(--wall) 80%);
-}
+/* Back wall: plain wall colour, the same colour the booth shows through the
+   doorway, so no light spot or edge appears while you walk in or out. */
+.room-back { transform: translateZ(-50vw); backface-visibility: hidden; background: var(--wall); }
 /* Left wall, where the monitor hangs: a pool of light above the monitor and
    darker corners where it meets the back and front walls. */
 .room-left {
