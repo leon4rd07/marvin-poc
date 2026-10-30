@@ -220,11 +220,11 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 .paper-photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(160deg, #56646b, #3a454b); opacity: 0; pointer-events: none; }
 .paper figcaption { padding: .7em 2.4em 1.1em .1em; text-align: left; font: italic max(8px, .85em) Georgia, serif; white-space: nowrap; }
 .paper-close {
-  position: absolute; right: .45em; bottom: .45em; width: max(24px, calc(var(--u) * 2)); height: max(24px, calc(var(--u) * 2));
-  display: grid; place-items: center; padding: 0 0 .1em; border: 1px solid #e4dccb; border-radius: 50%;
-  background: #fff; color: var(--ink); font-size: max(14px, calc(var(--u) * 1.3)); line-height: 1;
+  position: absolute; right: .55em; bottom: .7em; width: max(18px, calc(var(--u) * 1.35)); height: max(18px, calc(var(--u) * 1.35));
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: #00000010; color: #6d6a62; font-size: max(11px, calc(var(--u) * .9)); line-height: 1;
 }
-.paper-close:hover { background: var(--yellow); border-color: var(--yellow); }
+.paper-close:hover { background: var(--ink); color: var(--paper); }
 
 /* Selfie effects. These always play (like the entrance), whatever the OS motion setting. */
 .camera-flash { position: absolute; inset: 0; z-index: 40; pointer-events: none; background: radial-gradient(circle at 34% 40%, #fff, #fffdf6 55%, #fff8e6); opacity: 0; animation: camera-flash .65s ease-out; }
