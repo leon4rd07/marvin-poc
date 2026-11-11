@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
-import { clamp, createSceneProgress, timeline } from "../lib/timeline";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/timeline";
+import { leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
 export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
@@ -8,52 +9,156 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
   const surface = useRef<HTMLDivElement>(null);
   const work = useRef<HTMLElement>(null);
   const reduced = useReducedMotion();
-  const [initialDirect] = useState(() => location.hash === "#work");
+  const [initialDirect] = useState(() => sectionFromHash(location.hash) !== null);
   const [sceneAllowed, setSceneAllowed] = useState(!initialDirect);
   const [sceneProgress] = useState(createSceneProgress);
   const direct = useRef(initialDirect);
   const initialized = useRef(false);
+  const portalFrame = useRef<PortalFrame | null>(null);
+  const paintWork = useRef<() => void>(() => {});
+  // The 3D scene reports where the page belongs in the very frame it draws, so
+  // the HTML page and the doorway never drift apart.
+  const onPortal = useCallback((frame: PortalFrame | null) => {
+    portalFrame.current = frame;
+    paintWork.current();
+  }, []);
 
   useEffect(() => {
     let frame = 0;
     let transition = 0;
     let transitionTarget = -1;
+    let turningBack = false;
+    // Back/forward lets the browser restore an old scroll position on purpose; the
+    // "stay inside the booth" snapping must not fight that.
+    let navigatedAt = -Infinity;
+    // Set while deliberately leaving the booth (EXIT sign, logo), so the lock lets go.
+    let leaving = false;
+    const justNavigated = () => performance.now() - navigatedAt < 800;
+    const turnBackMs = 950;
     let wheelIntent = 0;
     let lastWheel = 0;
     let ignoreWheelUntil = 0;
     let touchStart: { x: number; y: number } | null = null;
+    // Scrolling back up from below the monitor must not run straight into the exit
+    // animation: a wheel gesture or swipe that began below the top of the booth only
+    // scrolls back to the top. Leaving needs a new, deliberate upward gesture.
+    let lastWheelEvent = 0;
+    let gestureFromBelow = false;
+    let touchFromBelow = false;
+    const below = () => scrollY > range() + 2;
+    // In front of the booth a little scrolling only nudges the camera forward (and it
+    // drifts back when you stop); the full walk-in starts once you have clearly
+    // scrolled in, about three mouse-wheel notches or a short swipe.
+    // One wheel notch (about 100px) or a short swipe is enough to walk in; a
+    // light trackpad touch below that only nudges the camera and drifts back.
+    const enterAt = .04;
+    const wheelPerProgress = 1500;
+    let scrubTimer = 0;
+    let touchProgress = 0;
+    const outside = () => !direct.current && scrollY < range() - 2;
+    // Once inside the booth you stay there: scrolling, swiping or paging up does
+    // nothing. The EXIT sign on the wall (or the logo) is the way back out.
+    const inside = () => !transition && !outside() && !below();
+    function scrubTo(progress: number) {
+      window.scrollTo({ top: clamp(progress) * range(), behavior: "instant" });
+      render();
+    }
+    function releaseScrub() {
+      scrubTimer = 0;
+      if (locked) return;
+      const progress = scrollY / range();
+      if (progress > .001 && progress < .999 && !transition) playTransition(progress >= enterAt);
+    }
+    let state = timeline(0);
+    const root = document.documentElement;
+    // Inside the booth the page is steady: the window no longer scrolls at all and
+    // the booth wall (with the booking section below it) scrolls on its own, from
+    // the monitor downwards only. Leaving is the EXIT sign's job.
+    let locked = false;
+    function setLocked(next: boolean) {
+      if (next === locked) return;
+      locked = next;
+      root.dataset.locked = String(next);
+      if (next) window.scrollTo({ top: range(), behavior: "instant" });
+      else if (work.current) work.current.scrollTop = 0;
+    }
     const range = () => Math.max(1, (journey.current?.offsetHeight ?? 0) - (stage.current?.offsetHeight ?? innerHeight));
     let previousRange = range();
     function schedule() {
       if (!frame) frame = requestAnimationFrame(render);
     }
+    // While the booth is on screen the portfolio sits on its back wall: it is
+    // fully opaque, simply scaled into the doorway, and revealed as the curtain
+    // opens. Without WebGL it falls back to a plain fade in.
+    function paint() {
+      const element = work.current;
+      const placement = portalFrame.current;
+      const inPortal = placement !== null && !state.interactive && !direct.current;
+      root.dataset.portal = inPortal ? "on" : "off";
+      if (!element) return;
+      const pin = Math.min(0, scrollY - range());
+      element.style.opacity = String(inPortal ? 1 : state.monitor);
+      element.style.transform = state.interactive ? "none"
+        : `translateY(${pin}px)${inPortal
+          ? ` translate(${placement.x.toFixed(2)}px, ${placement.y.toFixed(2)}px) scale(${placement.scale.toFixed(5)})` : ""}`;
+    }
+    paintWork.current = paint;
     function render() {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      const progress = clamp(scrollY / range());
-      const state = timeline(direct.current || (reduced && progress > 0) ? 1 : progress);
+      // While locked inside, the window's own scroll position means nothing (a phone's
+      // address bar appearing or hiding can nudge it); the booth stays the booth.
+      // Phones snap scroll positions to device pixels, so the end of the walk-in can
+      // land a fraction of a pixel short: within 2px of the end counts as inside.
+      const reached = scrollY >= range() - 2 ? 1 : scrollY / range();
+      let progress = locked && !transition && !leaving ? 1 : clamp(reached);
+      // Once inside, the booth is one-way: however the page gets scrolled up (wheel,
+      // trackpad momentum, scrollbar, keys) it is put back at the monitor. Only the
+      // EXIT sign, the logo or the browser's Back button lead out.
+      if (!transition && state.interactive && !leaving && progress < 1 && !justNavigated()) {
+        progress = 1;
+        window.scrollTo({ top: range(), behavior: "instant" });
+      }
+      state = timeline(direct.current || (reduced && progress > 0) ? 1 : progress);
+      if (!state.interactive) leaving = false;
+      setLocked(state.interactive && !transition && !leaving && !turningBack);
       sceneProgress.set(state.progress);
-      // Keep the booth beneath the incoming portfolio throughout the dissolve;
+      // Keep the booth beneath the incoming portfolio throughout the entrance;
       // fading both layers out would expose a bright, empty background.
       if (surface.current) surface.current.style.opacity = "1";
       if (work.current) {
         if (!state.interactive && work.current.contains(document.activeElement))
           home.current?.focus({ preventScroll: true });
-        work.current.style.opacity = String(state.monitor);
-        work.current.style.transform = state.interactive ? "none" : `translateY(${Math.min(0, scrollY - range())}px)`;
         work.current.dataset.active = String(state.interactive);
+        // Once inside, turn left to face the monitor (a CSS transition on the room).
+        work.current.dataset.turned = String(state.interactive && !turningBack);
         work.current.inert = !state.interactive;
         work.current.setAttribute("aria-hidden", String(!state.interactive));
       }
+      paint();
       if (stage.current) {
         stage.current.dataset.active = String(state.interactive);
         stage.current.dataset.phase = state.phase;
       }
     }
     function cancelTransition() {
+      window.clearTimeout(scrubTimer);
       cancelAnimationFrame(transition);
       transition = 0;
       transitionTarget = -1;
+      turningBack = false;
+    }
+    // The page may still be inert for a frame or two (slower browsers), so keep
+    // trying briefly until the focus really lands. "Our work" focuses the first
+    // view option on the monitor; "Say hello" scrolls to the closing section first.
+    function focusSection(section: Section, attempt = 0) {
+      const lower = section === "hello";
+      const target = lower
+        ? work.current?.querySelector<HTMLElement>(`#${section} h2`)
+        : work.current?.querySelector<HTMLElement>('.showcase-views button[aria-pressed="true"]');
+      if (lower && attempt === 0) target?.scrollIntoView({ block: "start", behavior: "instant" });
+      target?.focus({ preventScroll: true });
+      if (document.activeElement !== target && attempt < 30) requestAnimationFrame(() => focusSection(section, attempt + 1));
     }
     function playTransition(forward: boolean) {
       const destination = forward ? 1 : 0;
@@ -62,11 +167,21 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       direct.current = false;
       setSceneAllowed(true);
       const start = clamp(scrollY / range());
-      const started = performance.now();
+      let last = performance.now();
+      let played = 0;
+      // Leaving from inside: first turn back to face the doorway, then walk out.
+      const holdUntil = !forward && work.current?.dataset.turned === "true" ? last + turnBackMs : 0;
+      turningBack = holdUntil > 0;
+      if (turningBack && work.current) work.current.dataset.turned = "false";
       const duration = reduced ? 0 : Math.max(700, 3600 * Math.abs(destination - start));
       transitionTarget = destination;
       function step(now: number) {
-        const elapsed = duration === 0 ? 1 : clamp((now - started) / duration);
+        if (now < holdUntil) { last = now; transition = requestAnimationFrame(step); return; }
+        // A stalled frame (slow device, shader compile) advances the entrance by at
+        // most 250 ms, so it never jumps straight to the end.
+        played += Math.min(250, Math.max(0, now - last));
+        last = now;
+        const elapsed = duration === 0 ? 1 : clamp(played / duration);
         const eased = elapsed * elapsed * (3 - 2 * elapsed);
         window.scrollTo({ top: (start + (destination - start) * eased) * range(), behavior: "instant" });
         render();
@@ -74,8 +189,12 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
         else {
           transition = 0;
           transitionTarget = -1;
+          turningBack = false;
           ignoreWheelUntil = now + 220;
-          if (forward) work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
+          // Settle the final state now (lock inside the booth) instead of waiting
+          // for a scroll event that may never come.
+          render();
+          if (forward) focusSection("work");
           else home.current?.focus({ preventScroll: true });
         }
       }
@@ -83,14 +202,36 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     }
     const handlesDirection = (down: boolean) => down ? scrollY < range() - 2 : scrollY <= range() + 2 && scrollY > 0;
     const onWheel = (event: WheelEvent) => {
+      if (locked && !transition) return;
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
       const now = performance.now();
+      if (now - lastWheelEvent > 300) gestureFromBelow = below();
+      lastWheelEvent = now;
       if (now < ignoreWheelUntil) { event.preventDefault(); return; }
       const down = event.deltaY > 0;
+      if (!down && !transition && gestureFromBelow && !below()) { event.preventDefault(); return; }
+      if (!down && !transition && below()) {
+        // Scrolling up from below: stop exactly at the top of the booth, never past it.
+        const pixels = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+        if (scrollY + pixels < range()) {
+          event.preventDefault();
+          window.scrollTo({ top: range(), behavior: "instant" });
+        }
+        return;
+      }
       if (!transition && !handlesDirection(down)) return;
       event.preventDefault();
       if (transition) { playTransition(down); return; }
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
+      if (outside()) {
+        const progress = scrollY / range() + delta / wheelPerProgress;
+        window.clearTimeout(scrubTimer);
+        if (down && progress >= enterAt) { scrubTimer = 0; playTransition(true); return; }
+        scrubTo(progress);
+        scrubTimer = window.setTimeout(releaseScrub, 240);
+        return;
+      }
+      if (!down) return;
       if (now - lastWheel > 180 || Math.sign(delta) !== Math.sign(wheelIntent)) wheelIntent = 0;
       lastWheel = now;
       wheelIntent += delta;
@@ -98,39 +239,65 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     };
     const onTouchStart = (event: TouchEvent) => {
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+      touchFromBelow = below();
+      touchProgress = scrollY / range();
     };
     const onTouchMove = (event: TouchEvent) => {
+      if (locked && !transition) return;
       if (!touchStart || event.touches.length !== 1) return;
       const dx = touchStart.x - event.touches[0].clientX;
       const dy = touchStart.y - event.touches[0].clientY;
       if (Math.abs(dy) < 12 || Math.abs(dx) > Math.abs(dy)) return;
       if (!transition && !handlesDirection(dy > 0)) return;
+      if (dy < 0 && !transition && touchFromBelow) return;
       event.preventDefault();
+      if (!transition && outside()) {
+        // The swipe moves the camera with your finger; letting go decides.
+        const progress = touchProgress + (dy - Math.sign(dy) * 12) / (innerHeight * .9);
+        if (progress >= enterAt * 2) { touchStart = null; playTransition(true); return; }
+        scrubTo(progress);
+        return;
+      }
+      if (!transition && dy < 0) return;
       playTransition(dy > 0);
     };
-    const onTouchEnd = () => { touchStart = null; };
+    const onTouchEnd = () => {
+      const scrubbing = touchStart !== null && !transition && !locked && outside();
+      touchStart = null;
+      if (scrubbing) releaseScrub();
+    };
     const onKeyDown = (event: KeyboardEvent) => {
+      if (locked && !transition) return;
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || target?.isContentEditable
-        || target?.matches("input, textarea, select, [role='tab']")) return;
+        || target?.matches("input, textarea, select, video, button, [role='tab']")) return;
       const down = event.key === "PageDown" || event.key === "ArrowDown" || event.key === " " && !event.shiftKey;
       const up = event.key === "PageUp" || event.key === "ArrowUp" || event.key === " " && event.shiftKey;
       if (!(down || up) || !transition && !handlesDirection(down)) return;
       event.preventDefault();
+      if (up && inside()) return;
       playTransition(down);
     };
     const navigate = () => {
       cancelTransition();
       ignoreWheelUntil = 0;
-      direct.current = location.hash === "#work";
+      const section = sectionFromHash(location.hash);
+      if (!section) leaving = true;
+      direct.current = section !== null;
       setSceneAllowed(!direct.current);
       window.scrollTo({ top: direct.current ? range() : 0, behavior: "instant" });
       render();
-      if (direct.current)
-        work.current?.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
-      else home.current?.focus({ preventScroll: true });
+      if (section) {
+        requestAnimationFrame(() => focusSection(section));
+      } else home.current?.focus({ preventScroll: true });
     };
     const onScroll = () => {
+      if (locked && !transition && !leaving) return;
+      // Inside the booth any upward scroll is undone at once (see render).
+      if (!transition && state.interactive && !leaving && scrollY < range() - 2 && !justNavigated()) {
+        window.scrollTo({ top: range(), behavior: "instant" });
+        return;
+      }
       if (direct.current && scrollY < range() - 2) {
         direct.current = false;
         setSceneAllowed(true);
@@ -151,14 +318,14 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       schedule();
     };
     const onClick = (event: MouseEvent) => {
-      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>(".site-header a") : null;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[data-nav]") : null;
       if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
       if (location.hash !== link.hash) history.pushState(null, "", link.hash);
       navigate();
     };
     const onPageShow = () => {
-      if (initialDirect && location.hash === "#work") {
+      if (initialDirect && sectionFromHash(location.hash)) {
         cancelAnimationFrame(frame);
         frame = requestAnimationFrame(navigate);
       } else schedule();
@@ -172,8 +339,12 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     addEventListener("keydown", onKeyDown);
     addEventListener("resize", onResize);
     addEventListener("hashchange", navigate);
+    const onPopState = () => { navigatedAt = performance.now(); };
+    addEventListener("popstate", onPopState);
     addEventListener("pageshow", onPageShow);
     addEventListener("click", onClick);
+    const onLeave = () => { leaving = true; setLocked(false); playTransition(false); };
+    addEventListener(leaveEvent, onLeave);
     if (!initialized.current && direct.current) navigate();
     else if (reduced && scrollY > 0 && !direct.current) {
       direct.current = true;
@@ -185,6 +356,9 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     return () => {
       cancelAnimationFrame(frame);
       cancelTransition();
+      paintWork.current = () => {};
+      delete root.dataset.portal;
+      delete root.dataset.locked;
       removeEventListener("scroll", onScroll);
       removeEventListener("wheel", onWheel);
       removeEventListener("touchstart", onTouchStart);
@@ -194,9 +368,11 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       removeEventListener("keydown", onKeyDown);
       removeEventListener("resize", onResize);
       removeEventListener("hashchange", navigate);
+      removeEventListener("popstate", onPopState);
       removeEventListener("pageshow", onPageShow);
       removeEventListener("click", onClick);
+      removeEventListener(leaveEvent, onLeave);
     };
   }, [home, reduced, initialDirect, sceneProgress]);
-  return { journey, stage, surface, work, initialDirect, sceneProgress, sceneEnabled: sceneAllowed && !reduced };
+  return { journey, stage, surface, work, initialDirect, sceneProgress, onPortal, sceneEnabled: sceneAllowed && !reduced };
 }

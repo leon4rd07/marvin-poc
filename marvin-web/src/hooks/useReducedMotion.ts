@@ -1,14 +1,7 @@
-import { useSyncExternalStore } from "react";
-const query = () => matchMedia("(prefers-reduced-motion: reduce)");
-const subscribe = (callback: () => void) => {
-  const media = query();
-  media.addEventListener("change", callback);
-  return () => media.removeEventListener("change", callback);
-};
+// Product decision: the entrance animation (zoom into the curtain, curtain opens,
+// walk through the doorway) always plays, even when the OS asks for reduced motion.
+// To honour that setting again, restore the matchMedia version from git history:
+//   git log -p -- src/hooks/useReducedMotion.ts
 export function useReducedMotion() {
-  return useSyncExternalStore(
-    subscribe,
-    () => query().matches,
-    () => true,
-  );
+  return false;
 }

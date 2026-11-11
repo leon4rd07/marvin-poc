@@ -1,11 +1,12 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { asset, boothPoster } from "../lib/assets";
-import type { SceneProgress } from "../lib/timeline";
+import type { PortalFrame, SceneProgress } from "../lib/timeline";
 
-export function BoothScene({ surfaceRef, progress, enabled }: {
+export function BoothScene({ surfaceRef, progress, enabled, onPortal }: {
   surfaceRef: RefObject<HTMLDivElement | null>;
   progress: SceneProgress;
   enabled: boolean;
+  onPortal: (frame: PortalFrame | null) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -18,7 +19,7 @@ export function BoothScene({ surfaceRef, progress, enabled }: {
     // Keep Three.js off direct-entry and reduced-motion routes altogether.
     void import("../scene/createBoothScene").then(({ createBoothScene }) => {
       if (cancelled) return;
-      const scene = createBoothScene(container, progress.get());
+      const scene = createBoothScene(container, progress.get(), onPortal);
       dispose = scene.dispose;
       unsubscribe = progress.subscribe(scene.setProgress);
     }).catch(() => {
@@ -30,7 +31,7 @@ export function BoothScene({ surfaceRef, progress, enabled }: {
       dispose?.();
       container.dataset.renderer = "fallback";
     };
-  }, [enabled, progress]);
+  }, [enabled, progress, onPortal]);
   return (
     <div className="media-surface booth-surface" ref={surfaceRef}>
       <div className="booth-renderer" ref={host} data-renderer="fallback" role="img"

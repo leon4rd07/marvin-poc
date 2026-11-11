@@ -5,7 +5,7 @@ import {
 } from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { asset } from "../lib/assets";
-import { curtainVertex } from "./curtainMotion";
+import { curtainDrop, curtainVertex, noHand, type Hand } from "./curtainMotion";
 import { portraits } from "../data/portfolio";
 
 export const boothDimensions = { width: 3.2, height: 4.04, doorLeft: .43, doorRight: 1.43, eyeHeight: 1.7 };
@@ -31,7 +31,197 @@ function surfaceGrain() {
 
 // A procedural mesh reconstruction of marvin_main.png. Depth and hidden
 // interior surfaces are inferred from the single frontal reference image.
-export function buildBooth(invalidate: () => void) {
+// With `portal`, the interior back wall writes depth but no colour. The canvas
+// stays transparent there, so the HTML portfolio behind it shows through the
+// doorway exactly where the wall would be (and nowhere else).
+export type BoothTheme = { curtain?: string; sign?: string; sheen?: string };
+
+// The sample display on the booth: what a guest takes home. On the left one XL
+// strip (three large frames) half tucked into its black Marvin sleeve; on the
+// right two sets of small polaroids, one hanging from a line with pegs and one
+// fanned out as a stack. Drawn once into a canvas when the photos load.
+function photoStripBoard(sources: readonly string[], logoSource: string, onReady: () => void) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 720; canvas.height = 880;
+  const g = canvas.getContext("2d")!;
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  texture.anisotropy = 4;
+  let logo: HTMLImageElement | null = null;
+  function backdrop() {
+    const light = g.createRadialGradient(360, 360, 60, 360, 440, 620);
+    light.addColorStop(0, "#fffaf0"); light.addColorStop(1, "#efe1c2");
+    g.fillStyle = light; g.fillRect(0, 0, 720, 880);
+  }
+  function cover(image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+    const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
+    const sw = width / scale, sh = height / scale;
+    g.drawImage(image, (image.naturalWidth - sw) / 2, (image.naturalHeight - sh) / 2, sw, sh, x, y, width, height);
+  }
+  function wordmark(x: number, y: number, width: number, light = false) {
+    if (!logo) {
+      g.fillStyle = light ? "#f4ecd9" : "#1c1c18"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.font = `800 ${Math.round(width / 4.2)}px Helvetica, Arial, sans-serif`;
+      g.fillText("marvin", x, y);
+      return;
+    }
+    const height = width * logo.naturalHeight / logo.naturalWidth;
+    if (light) g.filter = "invert(1) sepia(.25) brightness(1.02)";
+    g.drawImage(logo, x - width / 2, y - height / 2, width, height);
+    g.filter = "none";
+  }
+  function shadow(blur = 18, offset = 8) {
+    g.shadowColor = "rgba(60, 45, 20, .3)"; g.shadowBlur = blur; g.shadowOffsetY = offset;
+  }
+  function photoInto(images: HTMLImageElement[], index: number, x: number, y: number, width: number, height: number, mono = false) {
+    const image = images[index % Math.max(1, images.length)];
+    g.filter = mono ? "grayscale(1) contrast(1.08)" : "saturate(.92)";
+    if (image) cover(image, x, y, width, height);
+    else { g.fillStyle = "#e6dcc6"; g.fillRect(x, y, width, height); }
+    g.filter = "none";
+  }
+  // A small instant print: white frame, wide lower border with the wordmark.
+  function polaroid(images: HTMLImageElement[], index: number, x: number, y: number, size: number, angle: number, mono = false) {
+    const pad = size * .07, foot = size * .3;
+    const width = size + pad * 2, height = size + pad + foot;
+    g.save();
+    g.translate(x, y); g.rotate(angle);
+    shadow(12, 5);
+    g.fillStyle = "#fffefb"; g.fillRect(-width / 2, -height / 2, width, height);
+    g.shadowColor = "transparent";
+    photoInto(images, index, -width / 2 + pad, -height / 2 + pad, size, size, mono);
+    wordmark(0, height / 2 - foot / 2, size * .42);
+    g.restore();
+  }
+  function peg(x: number, y: number) {
+    g.save();
+    g.translate(x, y);
+    shadow(4, 2);
+    g.fillStyle = "#c9a974"; g.fillRect(-5, -16, 10, 30);
+    g.shadowColor = "transparent";
+    g.fillStyle = "#a98852"; g.fillRect(-1, -16, 2, 30);
+    g.fillStyle = "#8f8f8f"; g.fillRect(-6, -2, 12, 4);
+    g.restore();
+  }
+  function draw(images: HTMLImageElement[]) {
+    backdrop();
+    // XL strip: a long strip of four big frames inside a clear plastic tote with a
+    // cord handle and a polka-dot ribbon, as guests carry it home.
+    g.save();
+    g.translate(186, 0); g.rotate(-.025);
+    const bagWidth = 272, bagTop = 178, bagBottom = 858;
+    const round = (x: number, y: number, w: number, h: number, r: number) => {
+      g.beginPath();
+      g.moveTo(x + r, y); g.lineTo(x + w - r, y); g.quadraticCurveTo(x + w, y, x + w, y + r);
+      g.lineTo(x + w, y + h - r); g.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      g.lineTo(x + r, y + h); g.quadraticCurveTo(x, y + h, x, y + h - r);
+      g.lineTo(x, y + r); g.quadraticCurveTo(x, y, x + r, y); g.closePath();
+    };
+    // Back of the bag with its shadow on the display.
+    shadow(26, 12);
+    g.fillStyle = "rgba(255, 255, 255, .35)";
+    round(-bagWidth / 2, bagTop, bagWidth, bagBottom - bagTop, 8); g.fill();
+    g.shadowColor = "transparent";
+    // The strip itself: cream paper, four frames, the wordmark at the foot.
+    const stripWidth = 226, pad = 13, frameHeight = 136, gap = 10, foot = 54;
+    const stripHeight = pad + 4 * (frameHeight + gap) - gap + foot;
+    const stripTop = bagTop + 34;
+    shadow(8, 3);
+    g.fillStyle = "#f8f3e7"; g.fillRect(-stripWidth / 2, stripTop, stripWidth, stripHeight);
+    g.shadowColor = "transparent";
+    [0, 2, 4, 1].forEach((frame, index) =>
+      photoInto(images, frame, -stripWidth / 2 + pad, stripTop + pad + index * (frameHeight + gap), stripWidth - pad * 2, frameHeight, true));
+    wordmark(0, stripTop + stripHeight - foot / 2, 96);
+    // Front film of the bag: a faint milky tint, glossy streaks and welded seams.
+    g.fillStyle = "rgba(255, 255, 255, .16)";
+    round(-bagWidth / 2, bagTop, bagWidth, bagBottom - bagTop, 8); g.fill();
+    const gloss = g.createLinearGradient(-bagWidth / 2, 0, bagWidth / 2, 0);
+    gloss.addColorStop(0, "rgba(255,255,255,.35)"); gloss.addColorStop(.08, "rgba(255,255,255,.05)");
+    gloss.addColorStop(.18, "rgba(255,255,255,.28)"); gloss.addColorStop(.26, "rgba(255,255,255,0)");
+    gloss.addColorStop(.8, "rgba(255,255,255,0)"); gloss.addColorStop(.9, "rgba(255,255,255,.22)"); gloss.addColorStop(1, "rgba(255,255,255,.4)");
+    g.fillStyle = gloss; g.fill();
+    g.strokeStyle = "rgba(255, 255, 255, .85)"; g.lineWidth = 2.5; g.stroke();
+    g.strokeStyle = "rgba(120, 100, 70, .25)"; g.lineWidth = 1; g.stroke();
+    g.fillStyle = "rgba(255, 255, 255, .55)"; g.fillRect(-bagWidth / 2 + 3, bagTop + 3, bagWidth - 6, 16);
+    g.fillRect(-bagWidth / 2 + 3, bagBottom - 12, bagWidth - 6, 9);
+    // Cord handle through two eyelets.
+    for (const x of [-62, 62]) {
+      g.fillStyle = "#d8d2c4"; g.beginPath(); g.arc(x, bagTop + 11, 7, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#8d8576"; g.beginPath(); g.arc(x, bagTop + 11, 3.5, 0, Math.PI * 2); g.fill();
+    }
+    g.lineCap = "round";
+    g.strokeStyle = "rgba(70, 55, 30, .28)"; g.lineWidth = 8;
+    g.beginPath(); g.moveTo(-62, bagTop + 14); g.bezierCurveTo(-58, bagTop - 120, 58, bagTop - 120, 62, bagTop + 14); g.stroke();
+    g.strokeStyle = "#f4efe4"; g.lineWidth = 5.5; g.stroke();
+    // Black polka-dot ribbon tied where the cord meets the bag.
+    g.save();
+    g.translate(-62, bagTop + 6);
+    const ribbon = (draw: () => void) => {
+      g.fillStyle = "#151513"; draw(); g.fill();
+      g.save(); g.clip();
+      g.shadowColor = "transparent";
+      g.fillStyle = "#f4efe4";
+      for (let dx = -60; dx <= 60; dx += 11) for (let dy = -40; dy <= 70; dy += 11) {
+        g.beginPath(); g.arc(dx + (dy % 22 ? 5 : 0), dy, 2.1, 0, Math.PI * 2); g.fill();
+      }
+      g.restore();
+    };
+    shadow(6, 3);
+    ribbon(() => { g.beginPath(); g.moveTo(0, 0); g.lineTo(-16, 58); g.lineTo(-6, 54); g.lineTo(-2, 62); g.lineTo(4, 2); g.closePath(); });
+    ribbon(() => { g.beginPath(); g.moveTo(0, 0); g.lineTo(18, 54); g.lineTo(8, 52); g.lineTo(6, 60); g.lineTo(-3, 2); g.closePath(); });
+    ribbon(() => { g.beginPath(); g.ellipse(-22, -6, 24, 13, -.35, 0, Math.PI * 2); });
+    ribbon(() => { g.beginPath(); g.ellipse(22, -6, 24, 13, .35, 0, Math.PI * 2); });
+    g.shadowColor = "transparent";
+    g.fillStyle = "#151513"; g.beginPath(); g.ellipse(0, -2, 9, 8, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+    g.restore();
+
+    // Polaroids on a line: two rows of three, held by wooden pegs.
+    for (const [row, y] of [[0, 130], [1, 316]] as const) {
+      g.strokeStyle = "#9c8159"; g.lineWidth = 2.5;
+      g.beginPath(); g.moveTo(372, y - 58); g.quadraticCurveTo(530, y - 36, 698, y - 58); g.stroke();
+      [0, 1, 2].forEach(column => {
+        const x = 430 + column * 112;
+        polaroid(images, row * 3 + column + 1, x, y + 14, 86, (column - 1) * .05 + (row ? .03 : -.02), (row + column) % 3 === 1);
+        peg(x, y - 50 + (column === 1 ? 6 : 0));
+      });
+    }
+
+    // A fanned stack of polaroids, as handed out at the event.
+    g.save();
+    g.translate(538, 772);
+    [-.4, -.2, 0, .2, .38].forEach((angle, index) => {
+      g.save();
+      g.rotate(angle);
+      polaroid(images, index + 2, 0, -150, 124, 0, index === 1);
+      g.restore();
+    });
+    g.restore();
+
+    // A faint diagonal reflection, as on the glass of a real display.
+    const glare = g.createLinearGradient(0, 0, 720, 880);
+    glare.addColorStop(0, "rgba(255,255,255,.18)"); glare.addColorStop(.35, "rgba(255,255,255,0)");
+    glare.addColorStop(.6, "rgba(255,255,255,0)"); glare.addColorStop(.7, "rgba(255,255,255,.1)"); glare.addColorStop(.8, "rgba(255,255,255,0)");
+    g.fillStyle = glare; g.fillRect(0, 0, 720, 880);
+    texture.needsUpdate = true;
+  }
+  draw([]);
+  const load = (source: string) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = source;
+    return image.decode().then(() => image, () => null);
+  };
+  const loaded = Promise.all([load(logoSource), ...sources.map(load)])
+    .then(([mark, ...results]) => {
+      logo = mark;
+      draw(results.filter((image): image is HTMLImageElement => image !== null));
+      onReady();
+    });
+  return { texture, loaded };
+}
+
+export function buildBooth(invalidate: () => void, { portal = false, theme = {} as BoothTheme } = {}) {
   const root = new Group();
   root.name = "Marvin — gold-trim reference reconstruction";
   let disposed = false;
@@ -86,7 +276,6 @@ export function buildBooth(invalidate: () => void) {
     clearcoat: .25, clearcoatRoughness: .2, envMapIntensity: 1.15,
     normalMap: polishedNormals });
   gold.normalScale.set(.65, .65);
-  const paper = new MeshStandardMaterial({ color: "#fffdf6", roughness: .92 });
 
   function box(name: string, width: number, height: number, depth: number,
     x: number, y: number, z: number, material: Material, rounded = false) {
@@ -168,7 +357,11 @@ export function buildBooth(invalidate: () => void) {
     root.add(mesh);
   }
 
-  box("Interior back wall", 3.14, 3.48, .09, 0, 1.76, -.74, interior);
+  const backWall = box("Interior back wall", 3.14, 3.48, .09, 0, 1.76, -.74,
+    portal ? new MeshBasicMaterial({ colorWrite: false }) : interior);
+  // Opaque meshes are not drawn in depth order, so the invisible wall must go
+  // first: everything drawn later (the white backdrop) then fails the depth test.
+  if (portal) backWall.renderOrder = -10;
   box("Left side", .09, 3.5, 1.5, -1.555, 1.75, 0, cream);
   box("Right side", .09, 3.5, 1.5, 1.555, 1.75, 0, cream);
   box("Ceiling", 3.2, .08, 1.5, 0, 3.47, 0, cream);
@@ -196,9 +389,10 @@ export function buildBooth(invalidate: () => void) {
   const signContext = signCanvas.getContext("2d")!;
   signContext.scale(512, 160);
   const signLight = signContext.createRadialGradient(.5, .5, .1, .5, .5, .68);
-  signLight.addColorStop(0, "#fff7c8");
-  signLight.addColorStop(.65, "#fff0ae");
-  signLight.addColorStop(1, "#e8ca7c");
+  const signTint = theme.sign ?? "#fff0ae";
+  signLight.addColorStop(0, "#fffbe6");
+  signLight.addColorStop(.65, signTint);
+  signLight.addColorStop(1, theme.sign ? signTint : "#e8ca7c");
   signContext.fillStyle = signLight;
   signContext.fillRect(0, 0, 1, 1);
   const signMap = new CanvasTexture(signCanvas);
@@ -219,29 +413,14 @@ export function buildBooth(invalidate: () => void) {
 
   const displayScale = 1.3;
   const displayY = 2.37;
-  box("Portrait display inset", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
-    new MeshStandardMaterial({ color: "#fff3c8", roughness: .8, emissive: "#ffe4a3", emissiveIntensity: .18 }));
-  frame("Portrait display frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
-  const rotations = [-.12, .09, .08, -.1, -.1, .13];
-  for (let index = 0; index < 6; index++) {
-    const card = new Group();
-    card.name = `Supplied PDF portrait ${index + 1}`;
-    card.position.set(displayX + (index % 2 === 0 ? -.185 : .185) * displayScale,
-      displayY + (.33 - Math.floor(index / 2) * .33) * displayScale, .87);
-    card.scale.set(displayScale, displayScale, 1);
-    card.rotation.z = rotations[index];
-    const portrait = portraits[index];
-    const aspect = portrait.width / portrait.height;
-    const imageWidth = Math.min(.25, .245 * aspect);
-    const imageHeight = imageWidth / aspect;
-    const backing = new Mesh(new BoxGeometry(imageWidth + .04, imageHeight + .06, .008), paper);
-    card.add(backing);
-    const map = photo(portrait.src);
-    const image = new Mesh(new PlaneGeometry(imageWidth, imageHeight), new MeshBasicMaterial({ map, toneMapped: false }));
-    image.position.set(0, .01, .006);
-    card.add(image);
-    root.add(card);
-  }
+  const board = photoStripBoard(portraits.map(portrait => asset(portrait.src)), asset("textures/marvin-wordmark.png"), () => { if (!disposed) invalidate(); });
+  textures.add(board.texture);
+  textureLoads.push(board.loaded);
+  box("Photo strip display backing", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,
+    new MeshStandardMaterial({ color: "#f2e7c6", roughness: .8 }));
+  frame("Photo strip display frame", .87 * displayScale, 1.06 * displayScale, displayX, displayY, .84, .025);
+  plane("Photo strip display — sample prints", .83 * displayScale, 1.02 * displayScale, displayX, displayY, .832,
+    new MeshBasicMaterial({ map: board.texture, toneMapped: false }));
 
   const printerPhoto = "textures/printer-reference.jpg";
   // Match the main reference: compact empty metal recess and a narrow upper
@@ -268,14 +447,54 @@ export function buildBooth(invalidate: () => void) {
   rod.rotation.z = Math.PI / 2;
   rod.position.set(.94, 3.025, .86);
   root.add(rod);
-  const curtainGeometry = new PlaneGeometry(1, 2.77, 120, 40);
+  const curtainGeometry = new PlaneGeometry(1, curtainDrop, 120, 40);
   (curtainGeometry.attributes.position as BufferAttribute).setUsage(DynamicDrawUsage);
   const velvet = photo("textures/olive-velvet.jpg", [20, 25, 590, 1225, 640, 1280]);
-  const curtain = new Mesh(curtainGeometry, new MeshPhysicalMaterial({
-    color: "#ffffff", map: velvet, roughness: .95, metalness: 0,
+  const curtainMaterial = new MeshPhysicalMaterial({
+    color: theme.curtain ?? "#ffffff", map: velvet, roughness: .95, metalness: 0,
     bumpMap: grain, bumpScale: .0018,
-    sheen: .85, sheenColor: "#889064", sheenRoughness: .85, side: DoubleSide,
-  }));
+    sheen: .85, sheenColor: theme.sheen ?? "#889064", sheenRoughness: .85, side: DoubleSide,
+  });
+  const curtain = new Mesh(curtainGeometry, curtainMaterial);
+  if (theme.curtain) {
+    // A recoloured curtain keeps the velvet's folds: use its brightness only and
+    // let the material colour supply the hue.
+    textureLoads.push(new Promise<void>(resolve => {
+      const original = velvet.image as CanvasImageSource & { width: number; height: number } | undefined;
+      const tint = () => {
+        const source = velvet.image as HTMLImageElement | undefined;
+        if (disposed || !source?.width) { resolve(); return; }
+        const canvas = document.createElement("canvas");
+        canvas.width = source.width; canvas.height = source.height;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(source, 0, 0);
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < pixels.data.length; i += 4) {
+          const luminance = .3 * pixels.data[i] + .59 * pixels.data[i + 1] + .11 * pixels.data[i + 2];
+          const value = Math.min(255, luminance * 1.55 + 28);
+          pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = value;
+        }
+        context.putImageData(pixels, 0, 0);
+        const gray = new CanvasTexture(canvas);
+        gray.colorSpace = SRGBColorSpace;
+        gray.anisotropy = 4;
+        gray.repeat.copy(velvet.repeat);
+        gray.offset.copy(velvet.offset);
+        textures.add(gray);
+        curtainMaterial.map = gray;
+        curtainMaterial.needsUpdate = true;
+        invalidate();
+        resolve();
+      };
+      if (original && "complete" in original && (original as HTMLImageElement).complete) tint();
+      else {
+        const wait = setInterval(() => {
+          const source = velvet.image as HTMLImageElement | undefined;
+          if (disposed || (source && source.complete && source.width)) { clearInterval(wait); tint(); }
+        }, 40);
+      }
+    }));
+  }
   curtain.name = "Supplied olive velvet — soft gathered curtain";
   curtain.castShadow = true;
   curtain.receiveShadow = true;
@@ -290,16 +509,19 @@ export function buildBooth(invalidate: () => void) {
   let lastOpening = -1;
   let lastSway = NaN;
   let lastWindTime = NaN;
-  function setCurtain(opening: number, sway = 0, windTime = 0) {
-    if (opening === lastOpening && sway === lastSway && windTime === lastWindTime) return;
+  let lastHand = "";
+  function setCurtain(opening: number, sway = 0, windTime = 0, hand: Hand = noHand) {
+    const handKey = hand.press === 0 && hand.drag === 0 ? "" : `${hand.u.toFixed(3)},${hand.v.toFixed(3)},${hand.press.toFixed(3)},${hand.drag.toFixed(3)}`;
+    if (opening === lastOpening && sway === lastSway && windTime === lastWindTime && handKey === lastHand) return;
     lastOpening = opening;
     lastSway = sway;
     lastWindTime = windTime;
+    lastHand = handKey;
     const positions = curtainGeometry.attributes.position;
     const uv = curtainGeometry.attributes.uv;
     for (let i = 0; i < positions.count; i++) {
       const u = uv.getX(i), v = 1 - uv.getY(i);
-      const point = curtainVertex(u, v, opening, sway, windTime);
+      const point = curtainVertex(u, v, opening, sway, windTime, hand);
       positions.setXYZ(i, point.x, point.y, point.z);
     }
     positions.needsUpdate = true;
@@ -309,7 +531,7 @@ export function buildBooth(invalidate: () => void) {
   }
   setCurtain(0);
   return {
-    root, setCurtain, ready: Promise.all(textureLoads),
+    root, setCurtain, curtain, ready: Promise.all(textureLoads),
     dispose() {
       disposed = true;
       const materials = new Set<Material>();

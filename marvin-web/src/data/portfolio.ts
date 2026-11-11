@@ -5,12 +5,27 @@ export type Portrait = {
   width: number;
   height: number;
 };
+// Optional clip for an event. Drop your own MP4 in public/portfolio/videos/ and
+// point `src` at it; an event without a video simply hides the Video option.
+export type PortfolioVideo = { src: string; label: string };
+// Colours of the 3D booth for an event (curtain tint, sign glow, curtain sheen).
+export type EventTheme = { curtain?: string; sign?: string; sheen?: string };
+// For the 3D view (see scene/buildBackdrop and scene/buildWrappedBooth):
+// - backdrop: a photo of the event's backdrop with a transparent background, shown
+//   next to the booth; `width` is its width in the scene (the booth is about 3.1).
+// - wrap: a booth made for the event, printed with its own design: the drawings of
+//   the front, back and both sides, the sign on the roof box, and the colour of
+//   the unprinted parts. It is shown instead of the standard Marvin booth.
+export type EventBackdrop = { src: string; width: number };
+export type EventBoothWrap = { front: string; back: string; left: string; right: string; sign: string; color: string };
 export type Collection = {
   id: string;
   name: string;
-  caption: string;
-  description: string;
   images: readonly Portrait[];
+  video?: PortfolioVideo;
+  theme: EventTheme;
+  backdrop?: EventBackdrop;
+  wrap?: EventBoothWrap;
 };
 
 export const portraits: readonly Portrait[] = [
@@ -26,62 +41,55 @@ export const portraits: readonly Portrait[] = [
   ...portrait,
 }));
 
+// Each event has its own photos, video and 3D booth look. The images and clips
+// below are demo content: replace them with the real event material.
 export const collections: readonly Collection[] = [
   {
-    id: "classics",
-    name: "The classics",
-    caption: "A few seconds.\nA forever kind of feeling.",
-    description: "Unfiltered smiles and the in-between faces. A little reminder of being yourself.",
-    images: portraits.slice(0, 3),
+    id: "ikea",
+    name: "IKEA",
+    images: [0, 1, 2, 3, 4, 5].map(i => portraits[i]),
+    video: { src: "portfolio/videos/ikea.mp4", label: "IKEA event, a short highlight clip" },
+    theme: { curtain: "#6f8fe8", sign: "#ffd94a", sheen: "#5d78c9" },
+    wrap: {
+      front: "portfolio/booths/ikea-front.jpg",
+      back: "portfolio/booths/ikea-back.jpg",
+      left: "portfolio/booths/ikea-left.jpg",
+      right: "portfolio/booths/ikea-right.jpg",
+      sign: "portfolio/booths/ikea-sign.jpg",
+      color: "#1f4f9e",
+    },
   },
   {
-    id: "warm-memories",
-    name: "Warm memories",
-    caption: "Good company.\nBetter memories.",
-    description: "The people who make an ordinary moment feel like something worth keeping.",
-    images: portraits.slice(3, 6),
-  },
-  {
-    id: "after-hours",
-    name: "After hours",
-    caption: "One more moment\nbefore you go.",
-    description: "For the last laugh, the unexpected pose, and the stories that stay with you.",
-    images: [portraits[1], portraits[3], portraits[5]],
+    id: "wedding",
+    name: "Wedding",
+    images: [2, 4, 5, 1, 0, 3].map(i => portraits[i]),
+    video: { src: "portfolio/videos/wedding.mp4", label: "Wedding, a short highlight clip" },
+    theme: { curtain: "#e9b9c6", sign: "#fff0e4", sheen: "#d9a0b0" },
+    backdrop: { src: "portfolio/backdrops/wedding.webp", width: 4.4 },
   },
 ];
-export const tabs = [
-  { id: "portraits", label: "The portraits" },
-  { id: "experience", label: "The experience" },
-  { id: "hello", label: "Say hello" },
+// Ways to look at an event on the monitor.
+export const showcaseViews = [
+  { id: "photos", label: "Photos" },
+  { id: "model", label: "3D model" },
+  { id: "video", label: "Video" },
 ] as const;
-export type PortfolioTab = (typeof tabs)[number]["id"];
-export const experience = {
-  heading: "Close the curtain.\nOpen up a little.",
-  description: "A concept for a small, private space where the best photo is the one that feels like you.",
-  steps: [
-    { title: "Step inside", description: "Your people. A little privacy. A moment of your own." },
-    { title: "Find your face", description: "The big smile, the silly one, the perfectly imperfect one." },
-    { title: "Keep a moment", description: "A small reminder of a very good time." },
-  ],
+export type ShowcaseView = (typeof showcaseViews)[number]["id"];
+// Contact links for the booking section.
+// - whatsapp: the number in international format, digits only
+// - instagram / tiktok: the full profile URLs
+export const social = {
+  whatsapp: "6282322220007",
+  whatsappMessage: "Halo Marvin, saya mau booking photobooth untuk event.",
+  instagram: "https://www.instagram.com/marvinstudio_id/",
+  tiktok: "https://www.tiktok.com/@marvinstudio.id",
 };
-export type ContactAction = {
-  label: string;
-  href: `mailto:${string}` | `https://${string}`;
-};
-export const contact: {
-  heading: string;
-  description: string;
-  note: string;
-  action: ContactAction | null;
-} = {
-  heading: "Your people.\nOur little booth.",
-  description: "A wedding, a celebration, or just because. Imagine Marvin in your next memory.",
-  note: "This is a concept preview. Contact and bookings are not connected yet.",
-  // Add only a confirmed business destination.
-  action: null,
+export const whatsappLink = social.whatsapp
+  ? `https://wa.me/${social.whatsapp}?text=${encodeURIComponent(social.whatsappMessage)}` : null;
+export const closing = {
+  book: "Book for an event",
+  bookNote: "chat with us on WhatsApp",
 };
 export const portfolioLabels = {
-  tagline: "A LITTLE SPACE FOR YOU",
-  contentNotice: "REFERENCE PORTRAITS · DEMO CONTENT",
   printSignature: "marvin studio",
 };
