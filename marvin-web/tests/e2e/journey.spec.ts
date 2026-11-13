@@ -65,7 +65,7 @@ test("resize preserves portfolio reading offset", async ({ page }) => {
 test("entrance animation plays even when the OS requests reduced motion", async ({ page, browserName }) => {
   test.skip(browserName === "firefox", "Headless Firefox has no GPU rendering; the 3D entrance is reviewed in Chrome and Safari.");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.mouse.move(180, 400);
   await page.mouse.wheel(0, 1200);
@@ -79,7 +79,7 @@ test("clean opening, shortcut, events, views, home and history", async ({
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator("#work")).toHaveAttribute("inert", "");
   await expect(page.locator(".booth-renderer")).toBeVisible();
   await expect(page.locator("video")).toHaveCount(0);
@@ -113,7 +113,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
   browserName,
 }) => {
   test.skip(browserName === "firefox", "Headless Firefox has no GPU rendering; the 3D entrance is reviewed in Chrome and Safari.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   const initialCamera = await scene.getAttribute("data-camera");
@@ -143,7 +143,7 @@ test("one wheel gesture opens and zooms into the portfolio, and one reverses hom
 });
 
 test("PageDown runs the same single entrance transition", async ({ page }) => {
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await page.getByRole("link", { name: "Marvin Studio home" }).focus();
   await page.keyboard.press("PageDown");
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
@@ -152,7 +152,7 @@ test("PageDown runs the same single entrance transition", async ({ page }) => {
 
 test("one touch swipe reaches the portfolio", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium" || test.info().project.name !== "mobile", "Touch input is exercised in mobile Chromium.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const session = await page.context().newCDPSession(page);
   try {
     await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 180, y: 540 }] });
@@ -164,7 +164,7 @@ test("one touch swipe reaches the portfolio", async ({ page, browserName }) => {
 });
 test("on a phone, scrolling inside the booth never walks you back out", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium" || test.info().project.name !== "mobile", "Touch input is exercised in mobile Chromium.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const session = await page.context().newCDPSession(page);
   const swipe = async (from: number, to: number) => {
     await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 180, y: from }] });
@@ -196,7 +196,7 @@ test("on a phone, a walk-in that lands a fraction of a pixel short still arrives
     window.scrollTo = ((options: ScrollToOptions) =>
       scrollTo(typeof options === "object" && (options.top ?? 0) > 100 ? { ...options, top: (options.top ?? 0) - .6 } : options)) as typeof window.scrollTo;
   });
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const session = await page.context().newCDPSession(page);
   try {
     await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 180, y: 540 }] });
@@ -252,7 +252,7 @@ test("inside the booth the page is steady: scrolling up never moves it, the book
 
 test("a light touch in front of the booth only nudges the camera and drifts back; one wheel notch walks in", async ({ page, browserName, isMobile }) => {
   test.skip(browserName !== "chromium" || isMobile, "Wheel input with the 3D scene is exercised in desktop Chrome.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.mouse.move(180, 400);
   await page.mouse.wheel(0, 25);

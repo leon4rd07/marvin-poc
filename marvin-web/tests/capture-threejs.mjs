@@ -20,7 +20,7 @@ try {
     page.on("pageerror", error => errors.push(error.message));
     page.on("response", response => { if (response.status() >= 400) errors.push(`${response.status()} ${response.url()}`); });
     const capture = name => page.screenshot({ path: fileURLToPath(new URL(`${width}-${name}.png`, output)) });
-    await page.goto(base);
+    await page.goto(`${base}?intro=0`);
     await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 15000 });
     await expect(page.locator(".booth-renderer")).toHaveAttribute("data-textures", "loaded", { timeout: 15000 });
     await page.waitForTimeout(250);

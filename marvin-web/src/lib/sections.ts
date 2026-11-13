@@ -8,3 +8,7 @@ export const sectionFromHash = (hash: string): Section | null => byHash[hash] ??
 
 // Asks the journey to walk back out of the booth (the "Step outside" button).
 export const leaveEvent = "marvin:leave";
+
+// The opening wall scene is skipped on direct links into the booth and with `?intro=0`.
+export const introStartsActive = () =>
+  sectionFromHash(location.hash) === null && new URLSearchParams(location.search).get("intro") !== "0";

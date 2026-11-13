@@ -3,7 +3,8 @@ import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/t
 import { leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
-export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
+// `introActive` is true while the opening wall scene owns wheel, touch and keys.
+export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, introActive: RefObject<boolean>) {
   const journey = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
@@ -202,6 +203,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
     }
     const handlesDirection = (down: boolean) => down ? scrollY < range() - 2 : scrollY <= range() + 2 && scrollY > 0;
     const onWheel = (event: WheelEvent) => {
+      if (introActive.current) return;
       if (locked && !transition) return;
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
       const now = performance.now();
@@ -243,6 +245,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       touchProgress = scrollY / range();
     };
     const onTouchMove = (event: TouchEvent) => {
+      if (introActive.current) return;
       if (locked && !transition) return;
       if (!touchStart || event.touches.length !== 1) return;
       const dx = touchStart.x - event.touches[0].clientX;
@@ -267,6 +270,7 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       if (scrubbing) releaseScrub();
     };
     const onKeyDown = (event: KeyboardEvent) => {
+      if (introActive.current) return;
       if (locked && !transition) return;
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || target?.isContentEditable
@@ -373,6 +377,6 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
       removeEventListener("click", onClick);
       removeEventListener(leaveEvent, onLeave);
     };
-  }, [home, reduced, initialDirect, sceneProgress]);
+  }, [home, introActive, reduced, initialDirect, sceneProgress]);
   return { journey, stage, surface, work, initialDirect, sceneProgress, onPortal, sceneEnabled: sceneAllowed && !reduced };
 }

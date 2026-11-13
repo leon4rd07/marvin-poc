@@ -42,6 +42,12 @@ a:focus-visible, button:focus-visible, h2:focus-visible { outline: 3px solid var
 .stack-main { font: 700 1em/1.05 Arial, Helvetica, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
 .stack-sub { margin-top: .5em; font: 700 max(.6em, 9px)/1.2 Arial, Helvetica, sans-serif; letter-spacing: .24em; text-transform: uppercase; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
+/* The opening wall of pictures lies over the booth until it has been scrolled away. */
+.marvel { position: fixed; inset: var(--header) 0 0; z-index: 20; background: #fff; overflow: hidden; }
+.marvel[data-gone="true"] { visibility: hidden; pointer-events: none; }
+.marvel-wall { position: absolute; inset: 0; will-change: transform; }
+.marvel-hint { position: absolute; inset: auto 0 max(22px, env(safe-area-inset-bottom, 0px) + 14px); margin: 0; text-align: center; pointer-events: none; }
+.marvel-hint .stack-sub { display: inline-block; margin: 0; padding: .7em 1.2em .7em 1.44em; border-radius: 999px; background: #fff; font-size: .72rem; }
 .journey { height: calc(100svh + var(--stage-height)); }
 .stage { position: sticky; top: 0; height: var(--stage-height); background: #fff; isolation: isolate; pointer-events: none; }
 .media-surface { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
