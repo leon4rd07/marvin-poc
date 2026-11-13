@@ -5,8 +5,8 @@ import { clamp } from "../lib/timeline";
 import { createScrollMotion } from "../scene/scrollMotion";
 import DriftWall, { type DriftWallItem, type DriftWallPose } from "./DriftWall";
 
-// The opening scene: a still wall of pictures turned 30 degrees to one side, which
-// swings round to face you as you scroll and then gives way to the booth. It lies over the booth and keeps its
+// The opening scene: a still wall of pictures tipped 30 degrees (rotated in its
+// own plane), which levels out as you scroll and then gives way to the booth. It lies over the booth and keeps its
 // own scroll position (the page itself does not move), so the booth's entrance
 // below is untouched.
 
@@ -17,8 +17,8 @@ const keyStep = .14;        // one PageDown / arrow / space
 const response = .28;       // seconds; larger is a longer, softer glide
 // The wall is upright at `straightAt`; the rest of the scroll fades it into the booth.
 const straightAt = .8;
-// Positive `turn` puts the left side nearer; make it negative for the other way.
-const leaning: DriftWallPose = { tilt: 0, turn: 30, roll: 0, depth: 120 };
+// Positive `roll` tips the wall clockwise; make it negative for the other way.
+const leaning: DriftWallPose = { tilt: 0, turn: 0, roll: 30, depth: 120 };
 const upright: DriftWallPose = { tilt: 0, turn: 0, roll: 0, depth: 0 };
 // The wall is finished once it can no longer be seen; the long easing tail after
 // that is not worth waiting for.
@@ -44,7 +44,7 @@ function fillWall(items: DriftWallItem[], columns: number, rows: number) {
 function layoutFor(width: number) {
   const tileWidth = width < 640 ? 118 : width < 1100 ? 160 : 190;
   const gap = width < 640 ? 12 : 18;
-  // Spare columns keep the far side covered while the wall is turned away.
+  // Spare columns keep the corners covered while the wall is tipped.
   const columns = Math.max(5, Math.ceil(width / ((tileWidth + gap) * 1.18)) + 10);
   return { tileWidth, tileHeight: Math.round(tileWidth * 4 / 3), gap, columns };
 }

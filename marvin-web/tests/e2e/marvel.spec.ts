@@ -5,19 +5,20 @@ import { test, expect, type Page } from "@playwright/test";
 const wheel = (page: Page, deltaY: number) => page.evaluate(delta => {
   document.body.dispatchEvent(new WheelEvent("wheel", { deltaY: delta, bubbles: true, cancelable: true }));
 }, deltaY);
-const angle = (page: Page, axis: "X" | "Y") => page.locator(".drift-wall__plane").evaluate((element, name) =>
+const angle = (page: Page, axis: "X" | "Y" | "Z") => page.locator(".drift-wall__plane").evaluate((element, name) =>
   Number(new RegExp(`rotate${name}\\(([-\\d.e]+)deg\\)`).exec((element as HTMLElement).style.transform)?.[1] ?? NaN), axis);
 const progress = (page: Page) => page.locator(".marvel").evaluate(element => Number((element as HTMLElement).dataset.progress));
 const tracks = (page: Page) => page.locator(".drift-wall__track").evaluateAll(elements =>
   elements.map(element => (element as HTMLElement).style.transform).join("|"));
 
-test("the wall of pictures opens the site turned to one side and swings straight as it is scrolled", async ({ page }) => {
+test("the wall of pictures opens the site tipped over and levels out as it is scrolled", async ({ page }) => {
   await page.goto("./");
   const wall = page.locator(".marvel");
   await expect(wall).toHaveAttribute("data-gone", "false");
   await expect(page.locator(".drift-wall__tile img").first()).toBeVisible();
-  await expect.poll(() => angle(page, "Y")).toBe(30);
+  await expect.poll(() => angle(page, "Z")).toBe(30);
   expect(await angle(page, "X")).toBe(0);
+  expect(await angle(page, "Y")).toBe(0);
   // Every picture has loaded.
   await expect.poll(() => page.locator(".drift-wall__tile img").evaluateAll(images =>
     images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
@@ -28,13 +29,14 @@ test("the wall of pictures opens the site turned to one side and swings straight
   await expect.poll(() => progress(page)).toBeGreaterThan(.036);
   await page.waitForTimeout(500);
   expect(await progress(page)).toBeLessThan(.04);
-  expect(await angle(page, "Y")).toBeGreaterThan(29);
+  expect(await angle(page, "Z")).toBeGreaterThan(29);
   // The page itself has not moved: the booth still waits at its front.
   expect(await page.evaluate(() => scrollY)).toBe(0);
-  // Scrolled as far as straight: the wall faces you and is still fully there.
+  // Scrolled as far as straight: the wall is level and still fully there.
   await wheel(page, 2000);
-  await expect.poll(() => angle(page, "Y")).toBeLessThan(.01);
+  await expect.poll(() => angle(page, "Z")).toBeLessThan(.01);
   expect(await angle(page, "X")).toBe(0);
+  expect(await angle(page, "Y")).toBe(0);
   await expect(wall).toHaveAttribute("data-gone", "false");
 });
 
