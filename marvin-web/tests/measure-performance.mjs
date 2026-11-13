@@ -42,7 +42,7 @@ for (let i = 0; i < 3; i++) {
       }
     }).observe({ type: "event", buffered: true, durationThreshold: 16 });
   });
-  await page.goto(base, { waitUntil: "networkidle" });
+  await page.goto(`${base}?intro=0`, { waitUntil: "networkidle" });
   await page.locator(".media-surface img").evaluate((img) => img.decode());
   await page.waitForTimeout(300);
   await page.waitForFunction(() => document.querySelector(".booth-renderer")?.getAttribute("data-renderer") === "ready", null, { timeout: 15000 });

@@ -6,7 +6,7 @@ async function openSection(page: Page, hash: string) {
 }
 
 test("the header shows the logo and the tagline only, and #hello opens the booking section", async ({ page }) => {
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator(".site-header")).toContainText("Romanticizing moments through our lens");
   await expect(page.locator(".site-header nav")).toHaveCount(0);
   await openSection(page, "#hello");

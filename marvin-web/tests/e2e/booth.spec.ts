@@ -18,7 +18,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   const videoRequests: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("request", request => { if (/\.mp4/.test(request.url())) videoRequests.push(request.url()); });
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await expect(page.locator("canvas")).toHaveCount(1);
@@ -65,7 +65,7 @@ test("supplied textures load and gentle wind continues while the rail and camera
       if (!response.ok()) failed.push(response.url());
     }
   });
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-textures", "loaded", { timeout: 60000 });
   expect(textures).toEqual(expect.arrayContaining(["printer-reference.jpg", "marvin-wordmark.png", "olive-velvet.jpg"]));
@@ -107,7 +107,7 @@ test("each event shows its own demo photos at their native dimensions", async ({
 
 test("hovering the curtain moves the cloth like a hand, and it settles afterwards", async ({ page, browserName, isMobile }) => {
   test.skip(browserName !== "chromium" || isMobile, "Hover is a desktop pointer interaction rendered in Chrome.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await expect(scene).toHaveAttribute("data-textures", "loaded", { timeout: 60000 });
@@ -141,7 +141,7 @@ test("unavailable WebGL retains the reference and a usable portfolio", async ({ 
       return Reflect.apply(original, this, [type, ...args]);
     } as typeof original;
   });
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback", { timeout: 60000 });
   await expect(page.locator(".booth-poster")).toBeVisible();
   await goToProgress(page, .82);
@@ -155,7 +155,7 @@ test("unavailable WebGL retains the reference and a usable portfolio", async ({ 
 
 test("GPU context loss falls back without hiding portfolio access", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Context-loss extension is exercised in Chrome.");
-  await page.goto("./");
+  await page.goto("./?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await page.locator("canvas").evaluate(canvas => canvas.getContext("webgl2")!.getExtension("WEBGL_lose_context")!.loseContext());
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback");

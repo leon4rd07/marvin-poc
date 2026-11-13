@@ -7,7 +7,7 @@ const output = new URL(process.env.QA_REVIEW_DIR || "../../docs/qa/pdf-breeze-20
 await fs.mkdir(output, { recursive: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-  await page.goto("http://127.0.0.1:5173/");
+  await page.goto("http://127.0.0.1:5173/?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-textures", "loaded");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready");
   await page.waitForTimeout(150);
@@ -23,7 +23,7 @@ try {
 
   for (const [width, height] of [[1440, 900], [390, 844]]) {
     await page.setViewportSize({ width, height });
-    await page.goto("http://127.0.0.1:5173/");
+    await page.goto("http://127.0.0.1:5173/?intro=0");
     await expect(page.locator(".booth-renderer")).toHaveAttribute("data-textures", "loaded");
     await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready");
     await expect(page.locator(".booth-renderer")).toHaveAttribute("data-camera", /^0\.0000,2\.0000,/);
