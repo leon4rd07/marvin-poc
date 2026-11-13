@@ -1,7 +1,7 @@
 import type { Print } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
 
-// The yellow button in the middle of the console takes the selfie.
+// The white shutter button in the middle of the console takes the selfie.
 export function SelfieButton({ onSnap }: { onSnap: () => void }) {
   return (
     <button type="button" className="selfie-button" aria-label="Take a selfie" onClick={onSnap}>

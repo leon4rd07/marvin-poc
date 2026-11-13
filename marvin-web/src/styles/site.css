@@ -54,7 +54,7 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
   border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-size: .6875rem; white-space: nowrap;
   box-shadow: 0 10px 22px -14px #1d1f1aa6;
 }
-.header-book svg { width: 34px; height: 34px; padding: 9px; border-radius: 50%; background: var(--yellow); fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
+.header-book svg { width: 34px; height: 34px; padding: 9px; border-radius: 50%; background: linear-gradient(#fbf9f3, #e9e4d7); box-shadow: inset 0 1px 0 #fff; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
 .header-book:hover { background: #000; }
 .header-book:hover svg { transform: translateX(2px); }
 .journey { height: calc(100svh + var(--stage-height)); }
@@ -140,7 +140,7 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .exit-door svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
 .exit-word { font-size: .6875rem; line-height: 1; letter-spacing: .3em; }
 .exit-sign:hover { background: #0d0e0fe6; }
-.exit-sign:hover .exit-door { background: var(--yellow); }
+.exit-sign:hover .exit-door { background: #fff; box-shadow: inset 0 1px 0 #fff, 0 0 0 3px #ffffff33, 0 1px 2px #0006; }
 .exit-sign:hover .exit-door svg { transform: translateX(-2px); }
 /* The turn itself is animated from PortfolioMonitor. */
 .room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); }
@@ -268,17 +268,20 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
   background: conic-gradient(from 210deg, #f7f8f9, #9ba1a7 22%, #eceef0 42%, #868c93 66%, #dfe2e5 84%, #f7f8f9);
   box-shadow: 0 .35em .9em -.25em #000d, inset 0 0 0 1px #ffffff59;
 }
-.selfie-button i::before, .selfie-button i::after { content: ""; position: absolute; border-radius: 50%; }
-.selfie-button i::before { inset: 9%; background: #08090a; box-shadow: inset 0 .08em .2em #000; }
-.selfie-button i::after {
+.selfie-button i::before, .selfie-button i::after {
   inset: 19%;
-  background: radial-gradient(circle at 50% 28%, #fff6c4, #f4d24a 46%, #e0b524 82%, #c99c14);
-  box-shadow: inset 0 -.14em .3em #7a5a0055, inset 0 .1em .12em #fffbe6aa, 0 0 .9em -.1em #f1cd3c59;
+  background: radial-gradient(circle at 50% 26%, #ffffff, #f6f4ef 48%, #e3dfd5 84%, #cfcabd);
+  box-shadow: inset 0 -.14em .3em #5a503f40, inset 0 .1em .12em #ffffffcc, 0 0 .9em -.1em #ffffff4d;
   transition: transform .14s ease, box-shadow .25s ease, filter .25s ease;
 }
-.selfie-button svg { display: none; }
-.selfie-button:hover i::after { filter: brightness(1.06); box-shadow: inset 0 -.14em .3em #7a5a0055, inset 0 .1em .12em #fffbe6aa, 0 0 1.4em .1em #f1cd3c8c; }
-.selfie-button:active i::after { transform: scale(.88); }
+/* The camera glyph sits on the white key, in the console's ink. */
+.selfie-button svg {
+  position: absolute; z-index: 1; left: 50%; top: 50%; width: 46%; height: 46%; translate: -50% -50%;
+  fill: none; stroke: #17181a; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .14s ease; pointer-events: none;
+}
+.selfie-button:hover i::after { filter: brightness(1.03); box-shadow: inset 0 -.14em .3em #5a503f40, inset 0 .1em .12em #ffffffcc, 0 0 1.4em .15em #ffffff80; }
+.selfie-button:active i::after, .selfie-button:active svg { transform: scale(.88); }
 .print-slot { grid-column: 3; justify-self: end; position: relative; width: 11em; height: .55em; }
 .slot-line { position: absolute; inset: 0; z-index: 2; border-radius: .3em; background: #000; box-shadow: inset 0 .15em .25em #000, 0 0 0 1px #3a3c3f, 0 1px 0 1px #ffffff1f; }
 /* The polaroid comes out of the slot: clipped above the slot line, free below it. */
@@ -356,7 +359,11 @@ h2 { margin: 0 0 18px; font-size: clamp(2rem, 3vw, 2.7rem); line-height: 1.05; w
 .closing-book:hover .closing-mark::before, .closing-book:focus-visible .closing-mark::before { height: .8em; border-radius: .12em; }
 .closing-book .stack-sub { margin-top: 1em; font-size: max(.36em, 11px); }
 /* "Book a session" under "Book for an event", in the same lettering. */
-.closing-session { margin: .9em 0 0; font-size: clamp(1.7rem, 4.2vw, 3.4rem); line-height: 1.05; }
+.closing-cta { display: inline-flex; flex-direction: column; align-items: flex-start; }
+.closing-session { margin: 2.4em 0 0; font-size: clamp(.95rem, 1.6vw, 1.25rem); line-height: 1.05; text-align: left; }
+.closing-session .closing-book { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
+.closing-session .stack-main { letter-spacing: .14em; }
+.closing-session .stack-sub { margin-top: .7em; font-size: max(.62em, 10px); }
 button.closing-book { padding: 0; border: 0; background: none; }
 .closing-social { list-style: none; display: flex; gap: 14px; margin: 44px 0 0; padding: 0; }
 .closing-social a { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px 0 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: .75rem; }

@@ -107,6 +107,7 @@ export function PortfolioMonitor() {
       </div>
       <div className="after">
         <section id="hello" className="closing" aria-labelledby="closing-title">
+          <div className="closing-cta">
           <h2 id="closing-title" tabIndex={-1}>
             <a className="closing-book" href={whatsappLink ?? undefined} target="_blank" rel="noopener noreferrer">
               <span className="stack-main"><span className="closing-mark">{closing.book}</span></span>{" "}
@@ -119,6 +120,7 @@ export function PortfolioMonitor() {
               <span className="stack-sub">{closing.sessionNote}</span>
             </button>
           </p>
+          </div>
           <ul className="closing-social">
             <li>
               <a href={social.instagram}
