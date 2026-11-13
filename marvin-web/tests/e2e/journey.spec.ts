@@ -17,8 +17,8 @@ test("long content and enlarged text remain reachable at 320 pixels", async ({ p
   })).toBe(true);
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).toHaveText("Wedding");
-  await page.locator(".closing-book").scrollIntoViewIfNeeded();
-  await expect(page.locator(".closing-book")).toBeInViewport();
+  await page.locator(".closing-book").first().scrollIntoViewIfNeeded();
+  await expect(page.locator(".closing-book").first()).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -98,7 +98,7 @@ test("clean opening, shortcut, events, views, home and history", async ({
   await page.getByRole("button", { name: "Video" }).click();
   await expect(page.locator("video.showcase-video")).toBeVisible();
   await first.click();
-  await expect(page.locator(".print > img")).toHaveCount(6);
+  await expect(page.locator(".print > img")).toHaveCount(10);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await expect(page.locator("#work")).toHaveAttribute("inert", "");
@@ -209,10 +209,10 @@ test("on a phone, a walk-in that lands a fraction of a pixel short still arrives
 });
 test("reduced motion, resize, failed images and reflow", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.route("**/portfolio/*", (route) => route.abort());
+  await page.route("**/portfolio/events/*", (route) => route.abort());
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await expect(page.locator(".image-fallback")).toHaveCount(6);
+  await expect(page.locator(".image-fallback")).toHaveCount(10);
   await expect(page.locator("video")).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(

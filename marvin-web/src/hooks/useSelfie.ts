@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
-import { portraits } from "../data/portfolio";
+import { selfies } from "../data/portfolio";
 import { playPrinter, playShutter, playSwish } from "../lib/sounds";
 
-export type Print = { id: number; photo: (typeof portraits)[number]; closing: boolean };
+export type Print = { id: number; photo: (typeof selfies)[number]; closing: boolean };
 
 // The print takes about 1.9s to come out; it then stays 3s before leaving.
 const flashMs = 650, printDelayMs = 450, closeMs = 1300, ejectMs = 1900, stayMs = 3000;
@@ -33,7 +33,7 @@ export function useSelfie() {
     later(() => {
       [...open.current].forEach(close);
       open.current.add(id);
-      setPrints(list => [...list, { id, photo: portraits[(id * 2 + 1) % portraits.length], closing: false }]);
+      setPrints(list => [...list, { id, photo: selfies[(id - 1) % selfies.length], closing: false }]);
       playPrinter();
       later(() => close(id), ejectMs + stayMs);
     }, printDelayMs);

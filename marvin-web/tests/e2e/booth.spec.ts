@@ -87,21 +87,18 @@ test("supplied textures load and gentle wind continues while the rail and camera
   await expect(scene).toHaveAttribute("data-camera", heldCamera!);
 });
 
-test("each event shows its own demo photos at their native dimensions", async ({ page }) => {
+test("each event shows its own photos on the ring", async ({ page }) => {
   await page.goto("./#work");
   const photos = page.locator(".ring .print > img");
-  await expect(photos).toHaveCount(6);
-  const dimensions = [[584, 440], [330, 585], [465, 499], [479, 364], [401, 413], [800, 601]];
-  const events = [[1, 2, 3, 4, 5, 6], [3, 5, 6, 2, 1, 4]];
-  for (let event = 0; event < events.length; event++) {
-    for (let index = 0; index < 6; index++) {
+  for (const event of ["ikea", "wedding"]) {
+    await expect(photos).toHaveCount(10);
+    for (let index = 0; index < 10; index++) {
       const photo = photos.nth(index);
-      const number = events[event][index];
-      await expect(photo).toHaveAttribute("src", new RegExp(`ape-portrait-${number}\\.webp$`));
+      await expect(photo).toHaveAttribute("src", new RegExp(`events/${event}-${String(index + 1).padStart(2, "0")}\\.webp$`));
       await expect.poll(() => photo.evaluate(image => [(image as HTMLImageElement).naturalWidth,
-        (image as HTMLImageElement).naturalHeight])).toEqual(dimensions[number - 1]);
+        (image as HTMLImageElement).naturalHeight])).toEqual([1000, 1200]);
     }
-    if (event < events.length - 1) await page.getByRole("button", { name: "Next event" }).click();
+    if (event === "ikea") await page.getByRole("button", { name: "Next event" }).click();
   }
 });
 

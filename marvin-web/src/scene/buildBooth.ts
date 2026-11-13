@@ -6,7 +6,7 @@ import {
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { asset } from "../lib/assets";
 import { curtainDrop, curtainVertex, noHand, type Hand } from "./curtainMotion";
-import { portraits } from "../data/portfolio";
+import { selfies } from "../data/portfolio";
 
 export const boothDimensions = { width: 3.2, height: 4.04, doorLeft: .43, doorRight: 1.43, eyeHeight: 1.7 };
 
@@ -413,7 +413,7 @@ export function buildBooth(invalidate: () => void, { portal = false, theme = {} 
 
   const displayScale = 1.3;
   const displayY = 2.37;
-  const board = photoStripBoard(portraits.map(portrait => asset(portrait.src)), asset("textures/marvin-wordmark.png"), () => { if (!disposed) invalidate(); });
+  const board = photoStripBoard(selfies.slice(0, 8).map(selfie => asset(selfie.src)), asset("textures/marvin-wordmark.png"), () => { if (!disposed) invalidate(); });
   textures.add(board.texture);
   textureLoads.push(board.loaded);
   box("Photo strip display backing", .85 * displayScale, 1.04 * displayScale, .035, displayX, displayY, .81,

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { closing, social, whatsappLink } from "../data/portfolio";
 import { useSelfie } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
-import { leaveEvent } from "../lib/sections";
+import { leaveEvent, openBooking } from "../lib/sections";
 import { PortfolioGallery } from "./PortfolioGallery";
 import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 
@@ -113,6 +113,12 @@ export function PortfolioMonitor() {
               <span className="stack-sub">{closing.bookNote}</span>
             </a>
           </h2>
+          <p className="closing-session">
+            <button type="button" className="closing-book" onClick={openBooking}>
+              <span className="stack-main"><span className="closing-mark">{closing.session}</span></span>{" "}
+              <span className="stack-sub">{closing.sessionNote}</span>
+            </button>
+          </p>
           <ul className="closing-social">
             <li>
               <a href={social.instagram}

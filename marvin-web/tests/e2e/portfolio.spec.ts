@@ -5,7 +5,7 @@ async function openSection(page: Page, hash: string) {
   await page.evaluate(target => { history.pushState(null, "", target); dispatchEvent(new HashChangeEvent("hashchange")); }, hash);
 }
 
-test("the header shows the logo and the tagline only, and #hello opens the booking section", async ({ page }) => {
+test("the header shows the logo, the tagline and Book a session, and #hello opens the booking section", async ({ page }) => {
   await page.goto("./?intro=0");
   await expect(page.locator(".site-header")).toContainText("Romanticizing moments through our lens");
   await expect(page.locator(".site-header nav")).toHaveCount(0);
@@ -26,7 +26,12 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
   await page.getByRole("button", { name: "Previous event" }).click();
   await expect(title).toHaveText("Wedding");
   await group.getByRole("button", { name: "Video" }).click();
-  await expect(page.locator("video.showcase-video")).toBeVisible();
+  const video = page.locator("video.showcase-video");
+  await expect(video).toBeVisible();
+  // The clips are upright (9:16): the player takes their shape.
+  await expect(video).toHaveAttribute("poster", /videos\/wedding\.webp$/);
+  const frame = (await video.boundingBox())!;
+  expect(frame.height / frame.width).toBeCloseTo(16 / 9, 1);
   await group.getByRole("button", { name: "3D model" }).click();
   // Software-only browsers may have no WebGL: then the viewer shows a poster and a notice.
   const viewer = page.locator(".model-viewer");
@@ -63,7 +68,7 @@ test("the selfie flashes, prints a polaroid out of the console's slot, and it ca
   await expect(papers).toHaveCount(1);
   // It comes out of the slot (or, on a slow machine, may already be leaving).
   expect(await papers.first().evaluate(paper => getComputedStyle(paper).animationName)).toMatch(/polaroid-(eject|toss)/);
-  await expect(papers.locator(".paper-photo img")).toBeAttached();
+  await expect(papers.locator(".paper-photo img")).toHaveAttribute("src", /selfies\/selfie-01\.webp$/);
   await expect(papers.locator(".paper-logo")).toHaveAttribute("src", /marvin-logo-studio\.png$/);
   // The polaroid hangs from the slot line, below it.
   const slot = await page.locator(".slot-line").boundingBox();
@@ -124,7 +129,7 @@ test("the photos turn round: arrows, keys and dragging bring another photo to th
   // Changing event keeps the photos on the ring, now the new event's.
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).not.toHaveText("IKEA");
-  await expect(page.locator(".ring .print")).toHaveCount(6);
+  await expect(page.locator(".ring .print")).toHaveCount(10);
 });
 
 test("every screen gets the laptop's monitor: same layout, settled as a flat page", async ({ page }) => {
@@ -158,4 +163,49 @@ test("every screen gets the laptop's monitor: same layout, settled as a flat pag
   const console = (await page.locator(".console").boundingBox())!;
   expect(console.y).toBeGreaterThan(box!.y + box!.height);
   expect(console.y + console.height).toBeLessThanOrEqual(viewport.height);
+});
+
+test("Book a session sends the order to WhatsApp", async ({ page }) => {
+  await page.goto("./?intro=0");
+  await page.evaluate(() => {
+    const opened: string[] = [];
+    (window as unknown as { opened: string[] }).opened = opened;
+    window.open = (url?: string | URL) => { opened.push(String(url)); return null; };
+  });
+  await page.getByRole("button", { name: "Book a session" }).click();
+  const dialog = page.getByRole("dialog", { name: /Book a session/ });
+  await expect(dialog).toBeVisible();
+  expect(page.url()).toContain("?book");
+  await expect(dialog.locator(".booking-total dd")).toContainText("Rp 88.000");
+  await dialog.getByRole("radio", { name: "3 strips" }).check({ force: true });
+  await dialog.getByRole("checkbox", { name: /All your photos/ }).check({ force: true });
+  await expect(dialog.locator(".booking-total dd")).toContainText("Rp 107.000");
+  await expect(dialog.locator(".booking-total dd")).toContainText("2 extra strips");
+  // The name is required before anything is sent.
+  await dialog.getByRole("button", { name: /Book and pay/ }).click();
+  expect(await page.evaluate(() => (window as unknown as { opened: string[] }).opened.length)).toBe(0);
+  await dialog.getByRole("textbox", { name: /Your name/ }).fill("Karen");
+  await dialog.getByRole("switch", { name: /at the booth now/ }).check({ force: true });
+  await dialog.getByRole("button", { name: /Book and pay/ }).click();
+  const [link] = await page.evaluate(() => (window as unknown as { opened: string[] }).opened);
+  expect(link).toMatch(/^https:\/\/wa\.me\/6282322220007\?text=/);
+  const message = decodeURIComponent(link.split("text=")[1]);
+  expect(message).toContain("Nama: Karen");
+  expect(message).toContain("Jumlah strip: 3");
+  expect(message).toContain("All your photos (+Rp 19.000): ya");
+  expect(message).toContain("Total: Rp 107.000 + 2 strip tambahan");
+  expect(message).toContain("Saya sudah di booth sekarang.");
+  await dialog.getByRole("button", { name: "Close booking" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).not.toHaveURL(/\?book/);
+});
+
+test("a link ending in ?book opens the booking form straight away", async ({ page }) => {
+  await page.goto("./?book");
+  await expect(page.getByRole("dialog", { name: /Book a session/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: /Book a session/ })).toBeHidden();
+  await page.goto("./#hello");
+  await page.locator(".closing-session button").click();
+  await expect(page.getByRole("dialog", { name: /Book a session/ })).toBeVisible();
 });
