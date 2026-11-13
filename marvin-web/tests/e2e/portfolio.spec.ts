@@ -5,7 +5,7 @@ async function openSection(page: Page, hash: string) {
   await page.evaluate(target => { history.pushState(null, "", target); dispatchEvent(new HashChangeEvent("hashchange")); }, hash);
 }
 
-test("the header shows the logo, the tagline and Book a session, and #hello opens the booking section", async ({ page }) => {
+test("the header shows the logo and the tagline, and #hello opens the booking section", async ({ page }) => {
   await page.goto("./");
   await expect(page.locator(".site-header")).toContainText("Romanticizing moments through our lens");
   await expect(page.locator(".site-header nav")).toHaveCount(0);
@@ -172,7 +172,8 @@ test("Book a session sends the order to WhatsApp", async ({ page }) => {
     (window as unknown as { opened: string[] }).opened = opened;
     window.open = (url?: string | URL) => { opened.push(String(url)); return null; };
   });
-  await page.getByRole("button", { name: "Book a session" }).click();
+  await page.evaluate(() => { location.hash = "#hello"; });
+  await page.locator(".closing-session button").click();
   const dialog = page.getByRole("dialog", { name: /Book a session/ });
   await expect(dialog).toBeVisible();
   expect(page.url()).toContain("?book");

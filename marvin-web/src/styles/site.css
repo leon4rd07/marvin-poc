@@ -48,15 +48,6 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stack-main { font-size: 1em; line-height: 1.05; color: var(--ink); }
 .stack-sub { margin-top: .5em; font-size: max(.6em, 9px); line-height: 1.2; letter-spacing: .24em; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
-/* "Book a session" in the header: an ink pill with a yellow key, like the form's button. */
-.header-book {
-  justify-self: end; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; padding: 5px 5px 5px 20px;
-  border: 0; border-radius: 999px; background: var(--ink); color: #fff; font-size: .6875rem; white-space: nowrap;
-  box-shadow: 0 10px 22px -14px #1d1f1aa6;
-}
-.header-book svg { width: 34px; height: 34px; padding: 9px; border-radius: 50%; background: linear-gradient(#fbf9f3, #e9e4d7); box-shadow: inset 0 1px 0 #fff; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
-.header-book:hover { background: #000; }
-.header-book:hover svg { transform: translateX(2px); }
 .journey { height: calc(100svh + var(--stage-height)); }
 .stage { position: sticky; top: 0; height: var(--stage-height); background: #fff; isolation: isolate; pointer-events: none; }
 .media-surface { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
@@ -360,7 +351,7 @@ h2 { margin: 0 0 18px; font-size: clamp(2rem, 3vw, 2.7rem); line-height: 1.05; w
 .closing-book .stack-sub { margin-top: 1em; font-size: max(.36em, 11px); }
 /* "Book a session" under "Book for an event", in the same lettering. */
 .closing-cta { display: inline-flex; flex-direction: column; align-items: flex-start; }
-.closing-session { margin: 2.4em 0 0; font-size: clamp(.95rem, 1.6vw, 1.25rem); line-height: 1.05; text-align: left; }
+.closing-session { margin: 4.2em 0 0; font-size: clamp(.95rem, 1.6vw, 1.25rem); line-height: 1.05; text-align: left; }
 .closing-session .closing-book { display: flex; flex-direction: column; align-items: flex-start; text-align: left; }
 .closing-session .stack-main { letter-spacing: .14em; }
 .closing-session .stack-sub { margin-top: .7em; font-size: max(.62em, 10px); }
@@ -395,9 +386,7 @@ button.closing-book { padding: 0; border: 0; background: none; }
   :root { --header: calc(56px + env(safe-area-inset-top, 0px)); }
   .wordmark img { height: 2.1rem; }
   .header-note { font-size: .8rem; }
-  .header-book { min-height: 36px; padding-block: 3px; }
-  .header-book svg { width: 30px; height: 30px; }
-  .exit-sign { top: calc(var(--header) + 10px); min-height: 36px; }
+      .exit-sign { top: calc(var(--header) + 10px); min-height: 36px; }
   .showcase-views button { min-height: 26px; padding: 0 10px; font-size: 9px; }
   .slide-arrow { width: 24px; height: 24px; font-size: 15px; }
   .event-dot { width: 22px; height: 24px; }
@@ -411,11 +400,8 @@ button.closing-book { padding: 0; border: 0; background: none; }
   .wordmark img { height: 2.6rem; }
   .header-note { font-size: .66rem; text-align: right; justify-self: end; }
   .header-note .stack-main { letter-spacing: .06em; line-height: 1.45; }
-  .site-header { grid-template-columns: auto 1fr auto; }
-  .header-book { gap: 8px; min-height: 40px; padding: 4px 4px 4px 12px; font-size: .625rem; }
-  .header-book svg { width: 30px; height: 30px; padding: 8px; }
-  .header-book-more { display: none; }
-  .closing { min-height: 60svh; padding-block: 72px; }
+  .site-header { grid-template-columns: auto 1fr; }
+        .closing { min-height: 60svh; padding-block: 72px; }
   .closing-social { flex-direction: column; align-items: center; }
 }
 @media (max-width: 350px) {
