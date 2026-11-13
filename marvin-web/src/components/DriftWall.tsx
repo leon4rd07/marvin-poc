@@ -2,6 +2,7 @@
 // for the opening scene: `poseRef` lets a scroll animation steer the wall's angle
 // every frame without re-rendering, `interactive={false}` keeps the tiles out of
 // the tab order when they are decoration, and `paused` stops the frame loop.
+// `speed={0}` gives a still wall: the tiles stay where they are.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent, type RefObject } from "react";
 import "./DriftWall.css";
 

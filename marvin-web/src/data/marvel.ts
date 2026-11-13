@@ -1,16 +1,10 @@
 import { asset } from "../lib/assets";
 import type { DriftWallItem } from "../components/DriftWall";
 
-// Pictures on the opening wall. These are stand-ins borrowed from the portfolio:
+// Pictures on the opening wall, borrowed from the portfolio's events for now:
 // replace the list with the real ones (files in `public/`, any number of them;
 // the wall repeats them to fill itself). Tiles are portrait, 3:4, and crop to fit.
-export const marvelItems: DriftWallItem[] = [
-  "portfolio/ape-portrait-1.webp",
-  "portfolio/ape-portrait-2.webp",
-  "portfolio/ape-portrait-3.webp",
-  "portfolio/ape-portrait-4.webp",
-  "portfolio/ape-portrait-5.webp",
-  "portfolio/ape-portrait-6.webp",
-  "portfolio/backdrops/wedding.webp",
-  "portfolio/booths/ikea-front.jpg",
-].map(path => ({ image: asset(path) }));
+const numbered = (name: string, count: number) =>
+  Array.from({ length: count }, (_, index) => `portfolio/events/${name}-${String(index + 1).padStart(2, "0")}.webp`);
+export const marvelItems: DriftWallItem[] = [...numbered("ikea", 10), ...numbered("wedding", 10)]
+  .map(path => ({ image: asset(path) }));
