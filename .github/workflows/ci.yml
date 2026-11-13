@@ -1,7 +1,8 @@
 name: Validate Marvin
+# Not run automatically (the browser suite takes around 20 minutes): start it by
+# hand from the Actions tab when a full check is wanted.
 on:
-  pull_request:
-  push:
+  workflow_dispatch:
   workflow_call:
 permissions:
   contents: read

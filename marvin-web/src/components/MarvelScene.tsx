@@ -5,8 +5,8 @@ import { clamp } from "../lib/timeline";
 import { createScrollMotion } from "../scene/scrollMotion";
 import DriftWall, { type DriftWallItem, type DriftWallPose } from "./DriftWall";
 
-// The opening scene: a wall of pictures leaning back, which stands up straight as
-// you scroll and then gives way to the booth. It lies over the booth and keeps its
+// The opening scene: a still wall of pictures tipped 30 degrees (rotated in its
+// own plane), which levels out as you scroll and then gives way to the booth. It lies over the booth and keeps its
 // own scroll position (the page itself does not move), so the booth's entrance
 // below is untouched.
 
@@ -17,13 +17,19 @@ const keyStep = .14;        // one PageDown / arrow / space
 const response = .28;       // seconds; larger is a longer, softer glide
 // The wall is upright at `straightAt`; the rest of the scroll fades it into the booth.
 const straightAt = .8;
-const leaning: DriftWallPose = { tilt: 30, turn: 0, roll: 0, depth: 120 };
+// Positive `roll` tips the wall clockwise; make it negative for the other way.
+const leaning: DriftWallPose = { tilt: 0, turn: 0, roll: 30, depth: 120 };
 const upright: DriftWallPose = { tilt: 0, turn: 0, roll: 0, depth: 0 };
-// A wheel gesture (and its trackpad momentum) that finishes the scene must not also
-// walk into the booth: the booth gets its turn after this long without wheel input,
-// and never sooner than `arrivalHoldMs` after the booth has appeared.
-const wheelQuietMs = 400;
-const arrivalHoldMs = 600;
+// The wall is finished once it can no longer be seen; the long easing tail after
+// that is not worth waiting for.
+const doneAt = .985;
+// After that the booth takes over, and scrolling simply carries on into it. This
+// short pause only keeps the very same wheel tick from doing both.
+const handoffMs = 250;
+// Bringing the wall back from in front of the booth takes a deliberate upward
+// scroll, not the few pixels a trackpad gives back at the end of a gesture.
+const wheelBackPx = 150;
+const touchBackPx = 40;
 
 const ease = (t: number) => t * t * (3 - 2 * t);
 const mix = (from: number, to: number, t: number) => from + (to - from) * t;
@@ -38,8 +44,8 @@ function fillWall(items: DriftWallItem[], columns: number, rows: number) {
 function layoutFor(width: number) {
   const tileWidth = width < 640 ? 118 : width < 1100 ? 160 : 190;
   const gap = width < 640 ? 12 : 18;
-  // Two extra columns keep the far edges covered while the wall is turned.
-  const columns = Math.max(3, Math.ceil(width / ((tileWidth + gap) * 1.18)) + 2);
+  // Spare columns keep the corners covered while the wall is tipped.
+  const columns = Math.max(5, Math.ceil(width / ((tileWidth + gap) * 1.18)) + 10);
   return { tileWidth, tileHeight: Math.round(tileWidth * 4 / 3), gap, columns };
 }
 
@@ -70,13 +76,21 @@ export function MarvelScene({ activeRef, startActive }: {
     const motion = { current: createScrollMotion(progress, response) };
     let frame = 0;
     let last = 0;
-    let lastWheel = -Infinity;
     let arrivedAt = -Infinity;
+    let handoff = 0;
+    let upward = 0;
+    let lastUpward = -Infinity;
     let touch: { y: number; from: number; owned: boolean } | null = null;
 
     const settled = () => progress === 1 && target === 1;
+    const handingOff = () => performance.now() - arrivedAt < handoffMs;
     // The booth is at rest at its front, the only place the wall can come back from.
     const atBoothHome = () => scrollY === 0 && document.documentElement.dataset.locked !== "true";
+    // Input goes to the booth from here on (unless a finger is still down).
+    function release() {
+      handoff = 0;
+      if (settled() && !touch) activeRef.current = false;
+    }
     function paint() {
       const straighten = ease(clamp(progress / straightAt));
       const reveal = ease(clamp((progress - straightAt) / (1 - straightAt)));
@@ -98,36 +112,37 @@ export function MarvelScene({ activeRef, startActive }: {
       const step = motion.current.step(target, (now - last) / 1000);
       last = now;
       progress = step.progress;
-      // The last sliver of the fade is invisible; do not make the booth wait for it.
-      const arrived = target === 1 && progress > .997;
+      const arrived = target === 1 && progress > doneAt;
       if (arrived) {
-        if (progress < 1) arrivedAt = performance.now();
         progress = 1;
         motion.current = createScrollMotion(1, response);
+        arrivedAt = performance.now();
+        window.clearTimeout(handoff);
+        handoff = window.setTimeout(release, handoffMs);
       }
       paint();
       frame = step.active && !arrived ? requestAnimationFrame(tick) : 0;
-      if (!frame && settled() && !touch && now - lastWheel > wheelQuietMs) activeRef.current = false;
     }
     function moveTo(next: number) {
       target = clamp(next);
       activeRef.current = true;
+      upward = 0;
       if (!frame) { last = performance.now(); frame = requestAnimationFrame(tick); }
     }
 
     const onWheel = (event: WheelEvent) => {
       if (event.ctrlKey || event.deltaY === 0 || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
-      // The event's own time, not the time it is handled: a busy page that delivers
-      // wheel events late must not mistake one gesture for two.
-      const now = event.timeStamp;
-      const quiet = now - lastWheel > wheelQuietMs;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1);
       if (settled()) {
-        const sameGesture = now - arrivedAt < arrivalHoldMs || (activeRef.current && !quiet);
-        const back = delta < 0 && atBoothHome();
-        if (!sameGesture && !back) { activeRef.current = false; return; }
+        if (handingOff()) { event.preventDefault(); return; }
+        activeRef.current = false;
+        if (delta > 0 || !atBoothHome()) { upward = 0; return; }
+        const now = performance.now();
+        if (now - lastUpward > 600) upward = 0;
+        lastUpward = now;
+        upward -= delta;
+        if (upward < wheelBackPx) return;
       }
-      lastWheel = now;
       event.preventDefault();
       moveTo(target + delta / wheelTravel);
     };
@@ -139,8 +154,8 @@ export function MarvelScene({ activeRef, startActive }: {
       if (!touch || event.touches.length !== 1) return;
       const dy = touch.y - event.touches[0].clientY;
       if (!touch.owned) {
-        // A downward pull in front of the booth brings the wall back.
-        if (dy > -12 || !atBoothHome()) return;
+        // A clear downward pull in front of the booth brings the wall back.
+        if (dy > -touchBackPx || !atBoothHome()) return;
         touch = { y: event.touches[0].clientY, from: 1, owned: true };
         activeRef.current = true;
         return;
@@ -150,7 +165,7 @@ export function MarvelScene({ activeRef, startActive }: {
     };
     const onTouchEnd = () => {
       touch = null;
-      if (settled() && !frame) activeRef.current = false;
+      if (!handoff) release();
     };
     const onKeyDown = (event: KeyboardEvent) => {
       const element = event.target instanceof HTMLElement ? event.target : null;
@@ -160,6 +175,7 @@ export function MarvelScene({ activeRef, startActive }: {
       const up = event.key === "PageUp" || event.key === "ArrowUp" || event.key === " " && event.shiftKey;
       if (!down && !up) return;
       if (settled()) {
+        if (handingOff()) { event.preventDefault(); return; }
         activeRef.current = false;
         if (!up || !atBoothHome()) return;
       }
@@ -170,7 +186,8 @@ export function MarvelScene({ activeRef, startActive }: {
     const onHashChange = () => {
       if (sectionFromHash(location.hash) === null || settled()) return;
       cancelAnimationFrame(frame);
-      frame = 0;
+      window.clearTimeout(handoff);
+      frame = handoff = 0;
       target = progress = 1;
       motion.current = createScrollMotion(1, response);
       activeRef.current = false;
@@ -190,6 +207,7 @@ export function MarvelScene({ activeRef, startActive }: {
     paint();
     return () => {
       cancelAnimationFrame(frame);
+      window.clearTimeout(handoff);
       removeEventListener("wheel", onWheel, capture);
       removeEventListener("touchstart", onTouchStart, true);
       removeEventListener("touchmove", onTouchMove, capture);
@@ -205,7 +223,7 @@ export function MarvelScene({ activeRef, startActive }: {
       <div className="marvel-wall" ref={wall}>
         <DriftWall items={items} poseRef={pose} paused={gone} interactive={false}
           columns={layout.columns} tileWidth={layout.tileWidth} tileHeight={layout.tileHeight} gap={layout.gap}
-          radius={10} perspective={1200} speed={34} parallax={.5} lift={40} fade={.55} dim={1} overlayColor="transparent" />
+          radius={10} perspective={1200} speed={0} parallax={0} lift={40} fade={.55} dim={1} overlayColor="transparent" />
       </div>
       <p className="marvel-hint" ref={hint}><span className="stack-sub">Scroll</span></p>
     </div>
