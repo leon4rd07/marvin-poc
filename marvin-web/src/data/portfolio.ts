@@ -83,7 +83,6 @@ export const collections: readonly Collection[] = [
       "The photographer's corner in front of the IKEA store at night",
       "Printed IKEA photos laid out on the table",
       "A guest taking a picture of the booth's sample strips",
-      "The booth lit up at night beside the IKEA store",
       "Guests posing by the cars while the photographer shoots",
       "Two guests looking at their photos on a phone",
       "A guest in a red shirt checking his print by the camera",

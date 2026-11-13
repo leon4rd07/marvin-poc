@@ -212,7 +212,7 @@ test("reduced motion, resize, failed images and reflow", async ({ page }) => {
   await page.route("**/portfolio/events/*", (route) => route.abort());
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await expect(page.locator(".image-fallback")).toHaveCount(10);
+  await expect(page.locator(".image-fallback")).toHaveCount(11);
   await expect(page.locator("video")).toHaveCount(0);
   await page.setViewportSize({ width: 320, height: 800 });
   await expect(

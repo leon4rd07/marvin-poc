@@ -90,9 +90,9 @@ test("supplied textures load and gentle wind continues while the rail and camera
 test("each event shows its own photos on the ring", async ({ page }) => {
   await page.goto("./#work");
   const photos = page.locator(".ring .print > img");
-  for (const event of ["ikea", "wedding"]) {
-    await expect(photos).toHaveCount(10);
-    for (let index = 0; index < 10; index++) {
+  for (const [event, count] of [["ikea", 11], ["wedding", 10]] as const) {
+    await expect(photos).toHaveCount(count);
+    for (let index = 0; index < count; index++) {
       const photo = photos.nth(index);
       await expect(photo).toHaveAttribute("src", new RegExp(`events/${event}-${String(index + 1).padStart(2, "0")}\\.webp$`));
       await expect.poll(() => photo.evaluate(image => [(image as HTMLImageElement).naturalWidth,
