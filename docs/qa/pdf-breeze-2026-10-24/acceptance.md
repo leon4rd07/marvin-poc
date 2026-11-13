@@ -1,7 +1,0 @@
-# PDF photos and curtain breeze - 2026-10-24
-
-Removed both interior chair meshes. Replaced all six booth display photos and portfolio photos with native-resolution images extracted from the supplied `ape.pdf`. Extraction uses original embedded pixels, not enlarged page screenshots; six PNG photos and six full-page PNG renders are delivered in `output/pdf/ape-images.zip`. The lossless runtime WebPs were checked pixel-for-pixel against the extracted PNGs. Both displays preserve the complete photo framing and aspect ratios.
-
-Added a slow, continuous breeze with two overlapping waves. The top rail stays fixed; motion grows toward the hem and reduces when gathered to keep the camera path clear. Scroll motion and camera choreography remain unchanged. The idle breeze renders at up to 30 fps and pauses with document visibility or the entrance fade; reduced motion retains the static fallback.
-
-Validation: production build, lint, all 15 unit tests and all 26 desktop/mobile Chromium browser tests passed. Tests cover wind continuing without camera drift, pinned rail, gentle per-frame motion, doorway clearance, all six loaded image dimensions, reduced motion and GPU fallbacks. Inspected booth overview, portrait close-up, empty interior, desktop/mobile portfolio and full-page PDF contact sheet. Regenerated the matching fallback poster and GLB; reimport validation confirms six PDF photos and no seat (60 meshes, 14,172 triangles, 5,593,492 bytes). The GLB is a static model snapshot; the website supplies the wind animation. This revision has not been published.
