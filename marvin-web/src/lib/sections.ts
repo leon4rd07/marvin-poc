@@ -12,3 +12,7 @@ export const leaveEvent = "marvin:leave";
 // The opening wall scene is skipped on direct links into the booth and with `?intro=0`.
 export const introStartsActive = () =>
   sectionFromHash(location.hash) === null && new URLSearchParams(location.search).get("intro") !== "0";
+
+// Opens the "Book a session" form (from the header and the closing section).
+export const bookEvent = "marvin:book";
+export const openBooking = () => window.dispatchEvent(new Event(bookEvent));

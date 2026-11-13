@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { BookSession } from "./components/BookSession";
 import { EntranceJourney } from "./components/EntranceJourney";
 import { MarvelScene } from "./components/MarvelScene";
 import { SiteHeader } from "./components/SiteHeader";
@@ -16,6 +17,7 @@ export default function App() {
         <EntranceJourney homeRef={home} introActive={introActive} />
         <MarvelScene activeRef={introActive} startActive={introAtStart} />
       </main>
+      <BookSession />
     </>
   );
 }

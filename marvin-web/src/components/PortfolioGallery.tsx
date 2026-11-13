@@ -158,7 +158,9 @@ export function PortfolioGallery() {
           {view === "video" && current.video && (
             <div className="showcase-slide" key={current.id}>
               <video className="showcase-video" controls playsInline preload="metadata"
-                poster={asset(current.images[0].src)} aria-label={current.video.label}>
+                width={current.video.width} height={current.video.height}
+                style={{ aspectRatio: `${current.video.width} / ${current.video.height}` }}
+                poster={asset(current.video.poster)} aria-label={current.video.label}>
                 <source src={asset(current.video.src)} type="video/mp4" />
               </video>
             </div>
