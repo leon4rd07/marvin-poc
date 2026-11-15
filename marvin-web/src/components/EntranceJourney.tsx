@@ -3,10 +3,11 @@ import { useJourneyProgress } from "../hooks/useJourneyProgress";
 import { BoothScene } from "./BoothScene";
 import { PortfolioMonitor } from "./PortfolioMonitor";
 
-export function EntranceJourney({ homeRef }: {
+export function EntranceJourney({ homeRef, introActive }: {
   homeRef: RefObject<HTMLAnchorElement | null>;
+  introActive: RefObject<boolean>;
 }) {
-  const { journey, stage, surface, work, initialDirect, sceneProgress, sceneEnabled, onPortal } = useJourneyProgress(homeRef);
+  const { journey, stage, surface, work, initialDirect, sceneProgress, sceneEnabled, onPortal } = useJourneyProgress(homeRef, introActive);
   return (
     <>
       {/* Plain wall colour behind the portfolio; only ever seen through the doorway. */}

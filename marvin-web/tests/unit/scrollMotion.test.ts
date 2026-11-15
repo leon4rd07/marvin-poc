@@ -25,4 +25,16 @@ describe("scroll movement", () => {
     for (let i = 0; i < 24; i++) fastProgress = fast.step(.7, 1 / 60).progress;
     expect(slowProgress).toBeCloseTo(fastProgress, 8);
   });
+  it("glides for longer with a larger response time", () => {
+    const quick = createScrollMotion(0), soft = createScrollMotion(0, .28);
+    let quickProgress = 0, softProgress = 0;
+    for (let i = 0; i < 12; i++) {
+      quickProgress = quick.step(1, 1 / 60).progress;
+      softProgress = soft.step(1, 1 / 60).progress;
+    }
+    expect(softProgress).toBeGreaterThan(0);
+    expect(softProgress).toBeLessThan(quickProgress);
+    for (let i = 0; i < 600; i++) softProgress = soft.step(1, 1 / 60).progress;
+    expect(softProgress).toBe(1);
+  });
 });
