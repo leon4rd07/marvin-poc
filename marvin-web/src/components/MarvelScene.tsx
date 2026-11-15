@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { marvelItems } from "../data/marvel";
+import { marvelItems, wallPins } from "../data/marvel";
 import { sectionFromHash } from "../lib/sections";
 import { clamp } from "../lib/timeline";
 import { createScrollMotion } from "../scene/scrollMotion";
@@ -35,17 +35,23 @@ const ease = (t: number) => t * t * (3 - 2 * t);
 const mix = (from: number, to: number, t: number) => from + (to - from) * t;
 
 const gcd = (a: number, b: number): number => b ? gcd(b, a % b) : a;
-// Enough tiles for every column, ordered so neighbours differ.
+// Enough tiles for every column, ordered so neighbours differ, with the pinned ones set on top.
 function fillWall(items: DriftWallItem[], columns: number, rows: number) {
   const step = [5, 7, 3, 11, 1].find(candidate => gcd(candidate, items.length) === 1) ?? 1;
-  return Array.from({ length: columns * rows }, (_, index) =>
+  const tiles = Array.from({ length: columns * rows }, (_, index) =>
     items[((index % columns) * 3 + Math.floor(index / columns) * step) % items.length]);
+  for (const [col, row, image] of wallPins) {
+    const column = (columns >> 1) + col;
+    if (column >= 0 && column < columns && row < rows) tiles[row * columns + column] = { image };
+  }
+  return tiles;
 }
 function layoutFor(width: number) {
   const tileWidth = width < 640 ? 118 : width < 1100 ? 160 : 190;
   const gap = width < 640 ? 12 : 18;
   // Spare columns keep the corners covered while the wall is tipped.
-  const columns = Math.max(5, Math.ceil(width / ((tileWidth + gap) * 1.18)) + 10);
+  // Even, so a column edge always sits on the centre line and pinned tiles line up at any width.
+  const columns = Math.max(5, Math.ceil(width / ((tileWidth + gap) * 1.18)) + 10) & ~1;
   return { tileWidth, tileHeight: Math.round(tileWidth * 4 / 3), gap, columns };
 }
 

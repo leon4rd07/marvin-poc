@@ -133,9 +133,11 @@ export default function DriftWall({
   }, [columnItems, speed, direction, variance]);
 
   useEffect(() => {
-    offsetsRef.current = columnMeta.map((meta, c) => meta.copyHeight * ((c * 0.37) % 1));
+    // Staggered from the middle column, so a tile keeps its place however many columns the screen needs.
+    const mid = columns >> 1;
+    offsetsRef.current = columnMeta.map((meta, c) => meta.copyHeight * ((((c - mid) * 0.37 + 0.33) % 1 + 1) % 1));
     velocitiesRef.current = columnItems.map(() => 0);
-  }, [columnMeta, columnItems]);
+  }, [columnMeta, columnItems, columns]);
 
   const applyPlaneTransform = useCallback(
     (px: number, py: number) => {
