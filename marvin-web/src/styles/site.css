@@ -217,6 +217,7 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 }
 .print:not([data-front="true"]) { cursor: pointer; }
 .print > img, .image-fallback { display: block; width: 100%; height: auto; aspect-ratio: 5 / 6; object-fit: cover; background: #fff; pointer-events: none; }
+.print[data-fit="whole"] > img { object-fit: contain; }
 .image-fallback { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; background: #ece6d6; padding: 5px; font-size: max(10px, .9em); text-align: center; overflow-wrap: anywhere; }
 .image-fallback > span { font-size: 1.6em; }
 .print figcaption { display: flex; justify-content: flex-start; padding: .7em 0 .8em; }
