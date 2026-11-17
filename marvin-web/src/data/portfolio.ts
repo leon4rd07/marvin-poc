@@ -73,7 +73,7 @@ export const selfies: readonly Portrait[] = [
 export const collections: readonly Collection[] = [
   {
     id: "ikea",
-    name: "IKEA",
+    name: "Streetscape 2026",
     images: eventPhotos("ikea", [
       "A red Ferrari leading a row of sports cars at night",
       "Classic Minis lined up in front of the IKEA store at sunset",
@@ -100,7 +100,7 @@ export const collections: readonly Collection[] = [
   },
   {
     id: "wedding",
-    name: "Wedding",
+    name: "B&K's Wedding",
     images: eventPhotos("wedding", [
       "The bride and groom kissing in front of the camera",
       "The bridal party posing at the Billy & Karen backdrop",
