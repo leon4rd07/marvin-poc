@@ -48,40 +48,47 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stack-main { font-size: 1em; line-height: 1.05; color: var(--ink); }
 .stack-sub { margin-top: .5em; font-size: max(.6em, 9px); line-height: 1.2; letter-spacing: .24em; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
-/* The opening (OpeningIntro.tsx): a polaroid on ink. Its window is a hole onto the
-   real page; the ink and the white paper are the window's shadows, so pushing
-   through it is one scale on .opening-print. */
+/* The opening (OpeningIntro.tsx): photos flicking full screen, then inside the
+   letters of MARVIN (the wordmark is a mask over the same photos), then the lit
+   sign that flies onto the booth. Positions and sizes animate from the script. */
 .opening {
-  --win-h: min(54svh, 64vw * 1.25); --win-w: calc(var(--win-h) * .8);
-  --edge: calc(var(--win-w) * .055); --strip: calc(var(--win-w) * .27);
-  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden;
-  touch-action: none; cursor: pointer;
+  --word-w: min(86vw, 980px); --word-h: calc(var(--word-w) * 227 / 1098);
+  position: fixed; inset: 0; z-index: 60; overflow: hidden; touch-action: none; cursor: pointer;
 }
-.opening-print { position: relative; width: var(--win-w); height: var(--win-h); transform-origin: 50% 50%; will-change: transform, opacity; }
-.opening-window { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 var(--edge) #fbfaf5, 0 0 0 250vmax var(--ink); }
-.opening-strip {
-  position: absolute; top: 100%; left: calc(var(--edge) * -1); right: calc(var(--edge) * -1); height: var(--strip);
-  display: flex; align-items: center; padding-inline: calc(var(--edge) * 1.6); background: #fbfaf5;
+/* Cream like the booth's wall, so photo-filled letters (night shots included) always
+   read, and the page underneath appears without a jump in colour. */
+.opening-backdrop { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #f7f1e6, #e6d9c2 85%); }
+.opening-full, .opening-mark { position: absolute; }
+.opening-full { inset: 0; }
+.opening-full img, .opening-mark img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 35%; opacity: 0;
 }
-.opening-strip img { width: 34%; height: auto; }
-.opening-film {
-  position: absolute; inset: 0; display: grid; place-items: center;
-  background: radial-gradient(circle at 50% 42%, #3a3d37, #141512 78%);
+.opening-full img[data-on="true"], .opening-mark img[data-on="true"] { opacity: 1; }
+/* A slow push on the full-screen photos, and a warm vignette, so it feels filmed. */
+.opening-full img { transform: scale(1.06); animation: opening-push 1s linear both; }
+.opening-full::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, #0000 40%, #0e0f0dcc); }
+@keyframes opening-push { to { transform: scale(1); } }
+.opening-mark, .opening-sign {
+  left: calc(50% - var(--word-w) / 2); top: calc(50% - var(--word-h) / 2); width: var(--word-w); height: var(--word-h);
 }
-/* After the flash the film is a milky blue-grey that clears to the picture. */
-.opening-film[data-exposed="true"] { background: linear-gradient(170deg, #6d7d80, #2f3c40); }
-.opening-film[data-exposed="true"] > * { display: none; }
-.opening-count { color: #f4f1ea; font-size: calc(var(--win-h) * .42); line-height: 1; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-/* The booth's ready light, blinking through the countdown. */
-.opening-ready {
-  position: absolute; top: 7%; right: 8%; width: max(8px, calc(var(--win-w) * .03)); aspect-ratio: 1; border-radius: 50%;
-  background: var(--yellow); box-shadow: 0 0 .8em var(--yellow); animation: opening-ready .42s steps(1) infinite;
+/* A hairline and a soft shadow around the letters (on a wrapper, since a mask
+   would cut away a filter on the letters themselves), so the word always reads,
+   whatever photo is inside. */
+.opening-mark-frame { position: absolute; inset: 0; filter: drop-shadow(0 0 1px #1d1f1ab3) drop-shadow(0 .6em 1.2em #4a361526); }
+.opening-mark {
+  transform-origin: 5.5% 55%; opacity: 0; will-change: transform;
+  -webkit-mask: var(--wordmark) center / 100% 100% no-repeat; mask: var(--wordmark) center / 100% 100% no-repeat;
 }
-@keyframes opening-ready { 50% { opacity: .2; } }
-.opening-caption {
-  position: absolute; left: 0; right: 0; top: calc(50% + var(--win-h) / 2 + var(--strip) / 2 + 26px); margin: 0;
-  padding-inline: 24px; color: #f4f1ea; font-size: .68rem; letter-spacing: .3em; text-align: center; text-wrap: balance;
+/* The booth's sign: black wordmark on warm yellow opal glass in a gold frame. The
+   element is the wordmark's box; the plate around it is in the same proportions
+   as on the booth (1.38 x .38 around a 1.08 wide word). */
+.opening-sign { position: absolute; opacity: 0; will-change: transform; }
+.opening-sign::before {
+  content: ""; position: absolute; inset: -35% -13.9%;
+  background: radial-gradient(ellipse at 50% 50%, #fffbe6, #fff0ae 65%, #e8ca7c);
+  box-shadow: 0 0 0 calc(var(--word-w) * .012) #b8954a, 0 0 calc(var(--word-w) * .12) #f1cd3c80, 0 calc(var(--word-w) * .04) calc(var(--word-w) * .1) -.02em #6b4f1a40;
 }
+.opening-sign img { position: relative; display: block; width: 100%; height: 100%; }
 .opening-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 
 /* "Scroll" on the booth's front: a hint that the page goes on, shown until you

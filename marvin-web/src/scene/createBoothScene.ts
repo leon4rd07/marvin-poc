@@ -1,5 +1,5 @@
 import {
-  ACESFilmicToneMapping, AdditiveBlending, CanvasTexture, Fog, Mesh, Raycaster, Vector2, MeshBasicMaterial,
+  ACESFilmicToneMapping, AdditiveBlending, Box3, CanvasTexture, Fog, Mesh, Raycaster, Vector2, MeshBasicMaterial,
   PCFSoftShadowMap, PerspectiveCamera, PlaneGeometry, Scene, SRGBColorSpace, Vector3, WebGLRenderer,
 } from "three";
 
@@ -94,6 +94,23 @@ export function createBoothScene(
   const scrollMotion = createScrollMotion(initialProgress);
   const booth = buildBooth(schedule, { portal: true });
   scene.add(booth.root);
+  // Where the wordmark on the sign is on screen, for the opening to land its logo on.
+  const signLogo = booth.root.getObjectByName("Supplied black Marvin wordmark — illuminated sign");
+  const signBox = new Box3();
+  const corner = new Vector3();
+  function signRect() {
+    if (!signLogo) return "";
+    signBox.setFromObject(signLogo);
+    const area = host.getBoundingClientRect();
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    for (let index = 0; index < 8; index++) {
+      corner.set(index & 1 ? signBox.max.x : signBox.min.x, index & 2 ? signBox.max.y : signBox.min.y,
+        index & 4 ? signBox.max.z : signBox.min.z).project(camera);
+      const x = area.left + (corner.x + 1) / 2 * area.width, y = area.top + (1 - corner.y) / 2 * area.height;
+      left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y);
+    }
+    return [left, top, right - left, bottom - top].map(value => value.toFixed(1)).join(",");
+  }
   // Hover (or tap) on the curtain moves the cloth as if a hand were on it.
   const hand = createHandMotion();
   const raycaster = new Raycaster();
@@ -169,6 +186,7 @@ export function createBoothScene(
     onPortal?.(frame);
     if (frames === 0) performance.mark("marvin-scene-ready");
     host.dataset.renderer = "ready";
+    host.dataset.signRect = signRect();
     host.dataset.curtain = pose.curtain.toFixed(4);
     // The scroll-driven pose (without the small pointer/idle drift).
     host.dataset.camera = [view.x, view.y, view.z].map(value => value.toFixed(4)).join(",");

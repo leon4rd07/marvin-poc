@@ -23,6 +23,13 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
   await expect(page.locator("canvas")).toHaveCount(1);
   await expect(page.locator("video")).toHaveCount(0);
+  // The sign's wordmark is reported on screen (the opening lands its logo there):
+  // centred, in the top half, wider than tall.
+  const [left, top, width, height] = (await scene.getAttribute("data-sign-rect"))!.split(",").map(Number);
+  const viewport = page.viewportSize()!;
+  expect(Math.abs(left + width / 2 - viewport.width / 2)).toBeLessThan(viewport.width * .08);
+  expect(top + height / 2).toBeLessThan(viewport.height / 2);
+  expect(width).toBeGreaterThan(height * 2);
   const camera = await scene.getAttribute("data-camera");
   await goToProgress(page, .285);
   await expect.poll(async () => Number(await scene.getAttribute("data-curtain"))).toBeCloseTo(.5, 2);
