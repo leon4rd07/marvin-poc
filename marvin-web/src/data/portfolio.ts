@@ -29,7 +29,6 @@ export type Collection = {
   wrap?: EventBoothWrap;
   // "whole": the photos are shown uncropped inside the print (white bands where
   // their shape differs from 5:6), for events whose photos are kept as supplied.
-  fit?: "whole";
 };
 
 // Photos of an event, in public/portfolio/events/<event>-01.webp, -02.webp, … in the
@@ -123,31 +122,25 @@ export const collections: readonly Collection[] = [
   {
     id: "noera",
     name: "Noera's 8th Anniversary",
-    // The photos are not cropped (portraits of mixed shapes), so each is listed
-    // with its own size: 1200 px tall, as WebP.
-    images: ([
-      ["Two guests posing at the Noera Eightfinity backdrop while the photographer shoots", 900, 1200],
-      ["Two Noera supplement bottles among pink and lilac flowers", 900, 1200],
-      ["The photographer counting in a couple at the butterfly backdrop, printer beside him", 900, 1200],
-      ["A guest in a lilac gown kissing her Noera Eightfinity print", 675, 1200],
-      ["A guest in a navy jacket pointing at his print", 675, 1200],
-      ["Six guests posing at the backdrop by the anniversary flowers", 900, 1200],
-      ["A guest with a pearl and flower crown holding up her print", 675, 1200],
-      ["A guest in a navy gown with a pearl collar holding her print", 675, 1200],
-      ["A guest in a lace dress showing her print beside the Noera banner", 675, 1200],
-      ["A guest in a plum off-shoulder top holding her print against the gold wall", 674, 1200],
-      ["The photo corner with its light and printer as guests crowd the lobby", 900, 1200],
-      ["The canapé table with sliders, croquettes and tiramisu cups", 900, 1200],
-      ["The curved corridor lined with lilac portrait banners", 900, 1200],
-      ["The butterfly backdrop and anniversary flowers before the guests arrive", 900, 1200],
-      ["Two crew members setting up the laptop and printer by the backdrop", 900, 1200],
-    ] as const).map(([alt, width, height], index) => {
-      const id = `noera-${String(index + 1).padStart(2, "0")}`;
-      return { id, src: `portfolio/events/${id}.webp`, alt, width, height };
-    }),
+    images: eventPhotos("noera", [
+      "Two guests posing at the Noera Eightfinity backdrop while the photographer shoots",
+      "Two Noera supplement bottles among pink and lilac flowers",
+      "The photographer counting in a couple at the butterfly backdrop, printer beside him",
+      "A guest in a lilac gown kissing her Noera Eightfinity print",
+      "A guest in a navy jacket pointing at his print",
+      "Six guests posing at the backdrop by the anniversary flowers",
+      "A guest with a pearl and flower crown holding up her print",
+      "A guest in a navy gown with a pearl collar holding her print",
+      "A guest in a lace dress showing her print beside the Noera banner",
+      "A guest in a plum off-shoulder top holding her print against the gold wall",
+      "The photo corner with its light and printer as guests crowd the lobby",
+      "The canapé table with sliders, croquettes and tiramisu cups",
+      "The curved corridor lined with lilac portrait banners",
+      "The butterfly backdrop and anniversary flowers before the guests arrive",
+      "Two crew members setting up the laptop and printer by the backdrop",
+    ]),
     video: { src: "portfolio/videos/noera.mp4", poster: "portfolio/videos/noera.webp", width: 720, height: 1280, label: "Noera Eightfinity, the 8th anniversary clip" },
     theme: { curtain: "#b9a3e3", sign: "#ffd3e6", sheen: "#9a84cc" },
-    fit: "whole",
   },
 ];
 // Ways to look at an event on the monitor.

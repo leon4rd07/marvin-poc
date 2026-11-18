@@ -87,10 +87,10 @@ test("supplied textures load and gentle wind continues while the rail and camera
   await expect(scene).toHaveAttribute("data-camera", heldCamera!);
 });
 
-test("each event shows its own photos on the ring", async ({ page }) => {
+test("each event shows its own photos on the ring, all cropped to fill the print", async ({ page }) => {
   await page.goto("./#work");
   const photos = page.locator(".ring .print > img");
-  for (const [event, count] of [["ikea", 11], ["wedding", 10]] as const) {
+  for (const [event, count] of [["ikea", 11], ["wedding", 10], ["noera", 15]] as const) {
     await expect(photos).toHaveCount(count);
     for (let index = 0; index < count; index++) {
       const photo = photos.nth(index);
@@ -98,7 +98,7 @@ test("each event shows its own photos on the ring", async ({ page }) => {
       await expect.poll(() => photo.evaluate(image => [(image as HTMLImageElement).naturalWidth,
         (image as HTMLImageElement).naturalHeight])).toEqual([1000, 1200]);
     }
-    if (event === "ikea") await page.getByRole("button", { name: "Next event" }).click();
+    if (event !== "noera") await page.getByRole("button", { name: "Next event" }).click();
   }
 });
 
