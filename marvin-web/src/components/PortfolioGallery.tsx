@@ -4,12 +4,12 @@ import { asset } from "../lib/assets";
 import { wrap } from "../lib/timeline";
 import { BoothModelViewer } from "./BoothModelViewer";
 
-function Portrait({ portrait, front, style, onPick }: {
-  portrait: PortraitData; front: boolean; style: CSSProperties; onPick: () => void;
+function Portrait({ portrait, front, style, onPick, fit }: {
+  portrait: PortraitData; front: boolean; style: CSSProperties; onPick: () => void; fit?: "whole";
 }) {
   const [broken, setBroken] = useState(false);
   return (
-    <figure className="print" data-front={front} style={style} aria-hidden={!front} onClick={front ? undefined : onPick}>
+    <figure className="print" data-front={front} data-fit={fit} style={style} aria-hidden={!front} onClick={front ? undefined : onPick}>
       {broken ? (
         <div className="image-fallback" role="img" aria-label={`${portrait.alt}. Image unavailable.`}>
           <span aria-hidden="true">✳</span>
@@ -148,7 +148,7 @@ export function PortfolioGallery() {
                   } as CSSProperties;
                   return (
                     <Portrait key={`${current.id}-${order}`} portrait={portrait} front={order === frontIndex}
-                      onPick={() => pick(order)} style={style} />
+                      onPick={() => pick(order)} style={style} fit={current.fit} />
                   );
                 })}
               </div>
