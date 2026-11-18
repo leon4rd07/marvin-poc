@@ -3,7 +3,7 @@ import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/t
 import { leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
-// `introActive` is true while the opening wall scene owns wheel, touch and keys.
+// `introActive` is true while the opening (OpeningIntro) owns wheel, touch and keys.
 export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, introActive: RefObject<boolean>) {
   const journey = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -174,7 +174,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       const holdUntil = !forward && work.current?.dataset.turned === "true" ? last + turnBackMs : 0;
       turningBack = holdUntil > 0;
       if (turningBack && work.current) work.current.dataset.turned = "false";
-      const duration = reduced ? 0 : Math.max(700, 3600 * Math.abs(destination - start));
+      // The walk in (and back out) plays 1.5x faster than the original 3.6 s.
+      const duration = reduced ? 0 : Math.max(470, 2400 * Math.abs(destination - start));
       transitionTarget = destination;
       function step(now: number) {
         if (now < holdUntil) { last = now; transition = requestAnimationFrame(step); return; }

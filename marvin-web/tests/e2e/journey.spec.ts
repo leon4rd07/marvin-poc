@@ -16,7 +16,7 @@ test("long content and enlarged text remain reachable at 320 pixels", async ({ p
     return brand.right + 8 <= tagline.left;
   })).toBe(true);
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(page.locator(".event-title")).toHaveText("Wedding");
+  await expect(page.locator(".event-title")).toHaveText("B&K's Wedding");
   await page.locator(".closing-book").first().scrollIntoViewIfNeeded();
   await expect(page.locator(".closing-book").first()).toBeInViewport();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -25,14 +25,14 @@ test("long content and enlarged text remain reachable at 320 pixels", async ({ p
 test("event selection survives navigation and the header links focus the matching section", async ({ page, isMobile }) => {
   await page.goto("./#work");
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(page.locator(".event-title")).toHaveText("Wedding");
+  await expect(page.locator(".event-title")).toHaveText("B&K's Wedding");
   if (!isMobile) {
     await openSection(page, "#hello");
     await expect(page.getByRole("heading", { name: /Book for an event/ })).toBeFocused();
   }
   await openSection(page, "#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await expect(page.locator(".event-title")).toHaveText("Wedding");
+  await expect(page.locator(".event-title")).toHaveText("B&K's Wedding");
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await page.goBack();
   await expect(page.locator("#work")).toHaveAttribute("aria-hidden", "false");
@@ -88,13 +88,13 @@ test("clean opening, shortcut, events, views, home and history", async ({
   await expect(first).toBeFocused();
   // Let the turn towards the monitor finish before using it.
   await expect(page.locator(".room")).toHaveAttribute("data-facing", "monitor");
-  await expect(page.locator(".event-title")).toHaveText("IKEA");
+  await expect(page.locator(".event-title")).toHaveText("Streetscape 2026");
   await page.getByRole("button", { name: "Previous event" }).click();
-  await expect(page.locator(".event-title")).toHaveText("Wedding");
+  await expect(page.locator(".event-title")).toHaveText("Noera's 8th Anniversary");
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(page.locator(".event-title")).toHaveText("IKEA");
-  await page.getByRole("button", { name: "Show Wedding" }).click();
-  await expect(page.locator(".event-title")).toHaveText("Wedding");
+  await expect(page.locator(".event-title")).toHaveText("Streetscape 2026");
+  await page.getByRole("button", { name: "Show B&K's Wedding" }).click();
+  await expect(page.locator(".event-title")).toHaveText("B&K's Wedding");
   await page.getByRole("button", { name: "Video" }).click();
   await expect(page.locator("video.showcase-video")).toBeVisible();
   await first.click();

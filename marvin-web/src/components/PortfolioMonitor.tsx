@@ -43,7 +43,7 @@ export function PortfolioMonitor() {
       element.dataset.facing = "turning";
       const toMonitor = next === "monitor";
       const turn = element.animate([{ transform: from }, { transform: toMonitor ? monitor : door }], toMonitor
-        ? { duration: 1800, delay: 250, easing: "cubic-bezier(.6, 0, .22, 1)", fill: "both" }
+        ? { duration: 1200, delay: 170, easing: "cubic-bezier(.6, 0, .22, 1)", fill: "both" }
         : { duration: 950, easing: "cubic-bezier(.5, 0, .3, 1)", fill: "both" });
       animation = turn;
       turn.onfinish = () => {

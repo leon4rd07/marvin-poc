@@ -18,13 +18,17 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
   const group = page.getByRole("group", { name: "How to view this event" });
   await expect(group.getByRole("button", { name: "Photos" })).toHaveAttribute("aria-pressed", "true");
   const title = page.locator(".event-title");
-  await expect(title).toHaveText("IKEA");
+  await expect(title).toHaveText("Streetscape 2026");
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(title).toHaveText("Wedding");
+  await expect(title).toHaveText("B&K's Wedding");
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(title).toHaveText("IKEA");
+  await expect(title).toHaveText("Noera's 8th Anniversary");
+  await page.getByRole("button", { name: "Next event" }).click();
+  await expect(title).toHaveText("Streetscape 2026");
   await page.getByRole("button", { name: "Previous event" }).click();
-  await expect(title).toHaveText("Wedding");
+  await expect(title).toHaveText("Noera's 8th Anniversary");
+  await page.getByRole("button", { name: "Previous event" }).click();
+  await expect(title).toHaveText("B&K's Wedding");
   await group.getByRole("button", { name: "Video" }).click();
   const video = page.locator("video.showcase-video");
   await expect(video).toBeVisible();
@@ -40,8 +44,8 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
     await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible();
     // Every event's models turn on their own until touched, then stay put.
     const canvas = viewer.locator(".model-canvas");
-    for (const name of ["Wedding", "IKEA"]) {
-      if (name === "IKEA") await page.getByRole("button", { name: "Next event" }).click();
+    for (const [index, name] of ["B&K's Wedding", "Noera's 8th Anniversary", "Streetscape 2026"].entries()) {
+      if (index > 0) await page.getByRole("button", { name: "Next event" }).click();
       await expect(title).toHaveText(name);
       await expect(viewer).toHaveAttribute("data-state", "ready", { timeout: 60000 });
       await expect(canvas).toHaveAttribute("data-turntable", "on", { timeout: 60000 });
@@ -128,7 +132,7 @@ test("the photos turn round: arrows, keys and dragging bring another photo to th
   await expect.poll(front).not.toBe(first);
   // Changing event keeps the photos on the ring, now the new event's.
   await page.getByRole("button", { name: "Next event" }).click();
-  await expect(page.locator(".event-title")).not.toHaveText("IKEA");
+  await expect(page.locator(".event-title")).not.toHaveText("Streetscape 2026");
   await expect(page.locator(".ring .print")).toHaveCount(10);
 });
 

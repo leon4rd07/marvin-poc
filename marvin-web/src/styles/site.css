@@ -48,12 +48,69 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stack-main { font-size: 1em; line-height: 1.05; color: var(--ink); }
 .stack-sub { margin-top: .5em; font-size: max(.6em, 9px); line-height: 1.2; letter-spacing: .24em; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
-/* The opening wall of pictures lies over the booth until it has been scrolled away. */
-.marvel { position: fixed; inset: var(--header) 0 0; z-index: 20; background: #fff; overflow: hidden; }
-.marvel[data-gone="true"] { visibility: hidden; pointer-events: none; }
-.marvel-wall { position: absolute; inset: 0; will-change: transform; }
-.marvel-hint { position: absolute; inset: auto 0 max(22px, env(safe-area-inset-bottom, 0px) + 14px); margin: 0; text-align: center; pointer-events: none; }
-.marvel-hint .stack-sub { display: inline-block; margin: 0; padding: .7em 1.2em .7em 1.44em; border-radius: 999px; background: #fff; font-size: .72rem; }
+/* The opening (OpeningIntro.tsx): a polaroid on ink. Its window is a hole onto the
+   real page; the ink and the white paper are the window's shadows, so pushing
+   through it is one scale on .opening-print. */
+.opening {
+  --win-h: min(54svh, 64vw * 1.25); --win-w: calc(var(--win-h) * .8);
+  --edge: calc(var(--win-w) * .055); --strip: calc(var(--win-w) * .27);
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; overflow: hidden;
+  touch-action: none; cursor: pointer;
+}
+.opening-print { position: relative; width: var(--win-w); height: var(--win-h); transform-origin: 50% 50%; will-change: transform, opacity; }
+.opening-window { position: absolute; inset: 0; overflow: hidden; box-shadow: 0 0 0 var(--edge) #fbfaf5, 0 0 0 250vmax var(--ink); }
+.opening-strip {
+  position: absolute; top: 100%; left: calc(var(--edge) * -1); right: calc(var(--edge) * -1); height: var(--strip);
+  display: flex; align-items: center; padding-inline: calc(var(--edge) * 1.6); background: #fbfaf5;
+}
+.opening-strip img { width: 34%; height: auto; }
+.opening-film {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: radial-gradient(circle at 50% 42%, #3a3d37, #141512 78%);
+}
+/* After the flash the film is a milky blue-grey that clears to the picture. */
+.opening-film[data-exposed="true"] { background: linear-gradient(170deg, #6d7d80, #2f3c40); }
+.opening-film[data-exposed="true"] > * { display: none; }
+.opening-count { color: #f4f1ea; font-size: calc(var(--win-h) * .42); line-height: 1; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+/* The booth's ready light, blinking through the countdown. */
+.opening-ready {
+  position: absolute; top: 7%; right: 8%; width: max(8px, calc(var(--win-w) * .03)); aspect-ratio: 1; border-radius: 50%;
+  background: var(--yellow); box-shadow: 0 0 .8em var(--yellow); animation: opening-ready .42s steps(1) infinite;
+}
+@keyframes opening-ready { 50% { opacity: .2; } }
+.opening-caption {
+  position: absolute; left: 0; right: 0; top: calc(50% + var(--win-h) / 2 + var(--strip) / 2 + 26px); margin: 0;
+  padding-inline: 24px; color: #f4f1ea; font-size: .68rem; letter-spacing: .3em; text-align: center; text-wrap: balance;
+}
+.opening-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+
+/* "Scroll" on the booth's front: a hint that the page goes on, shown until you
+   start walking in (and not while the opening plays). */
+.scroll-cue {
+  position: absolute; z-index: 3; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px) + 12px);
+  display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0;
+  color: var(--ink); font-size: .66rem; letter-spacing: .3em; translate: -50% 0;
+  opacity: 0; transition: opacity .4s ease; pointer-events: none;
+}
+.stage[data-phase="booth"] .scroll-cue { opacity: 1; transition-delay: .3s; }
+:root[data-intro="playing"] .scroll-cue { opacity: 0; transition: none; }
+.scroll-cue-label { display: inline-block; white-space: nowrap; padding: .75em 1.1em .75em 1.4em; border-radius: 999px; background: #fbfaf5e6; box-shadow: 0 6px 18px -10px #2a1f0f66, inset 0 0 0 1px #1d1f1a14; }
+.scroll-cue-swipe { display: none; }
+/* A mouse with its wheel rolling down (a finger swiping up on touch screens). */
+.scroll-cue-icon { position: relative; width: 20px; height: 32px; border: 2px solid var(--ink); border-radius: 12px; }
+.scroll-cue-icon::before {
+  content: ""; position: absolute; left: 50%; top: 6px; width: 4px; height: 7px; margin-left: -2px; border-radius: 2px;
+  background: var(--ink); animation: scroll-cue 1.6s cubic-bezier(.5, 0, .3, 1) infinite;
+}
+@keyframes scroll-cue { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(11px); opacity: 0; } 100% { opacity: 0; } }
+@media (hover: none) and (pointer: coarse) {
+  .scroll-cue-scroll { display: none; }
+  .scroll-cue-swipe { display: inline; }
+  .scroll-cue-icon { width: 2px; height: 30px; border: 0; border-radius: 0; background: linear-gradient(#1d1f1a00, #1d1f1a66); }
+  .scroll-cue-icon::before { top: auto; bottom: 0; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; animation-name: scroll-cue-swipe; }
+  @keyframes scroll-cue-swipe { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(-24px); opacity: 0; } 100% { opacity: 0; } }
+}
+@media (prefers-reduced-motion: reduce) { .scroll-cue-icon::before { animation: none; opacity: 1; } }
 .journey { height: calc(100svh + var(--stage-height)); }
 .stage { position: sticky; top: 0; height: var(--stage-height); background: #fff; isolation: isolate; pointer-events: none; }
 .media-surface { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
@@ -113,31 +170,32 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .room-view {
   position: relative; height: 100%; overflow: hidden; perspective: 50vw; perspective-origin: 50% 50%;
 }
-/* EXIT: a slim pill of smoked glass with a hairline edge, the word in quiet white
-   and the way out in a small ivory key that turns yellow when you point at it.
-   It only appears once you are inside and have turned to the monitor. */
+/* EXIT: a slim ink pill with a hairline edge, the word in quiet white and the way
+   out in a small ivory key that brightens when you point at it. It only appears
+   once you are inside and have turned to the monitor. No backdrop blur: in
+   Chromium browsers it could flash black while the pointer rested on it. */
 .exit-sign {
   position: absolute; z-index: 6; left: max(18px, 3vw); top: calc(var(--header) + 18px);
   display: flex; align-items: center; gap: .85rem; min-height: 46px; padding: 5px 1.25rem 5px 5px;
   border: 0; border-radius: 999px;
-  background: #141516c7; -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+  background-color: #18191b;
   box-shadow: inset 0 0 0 1px #ffffff1f, inset 0 1px 0 #ffffff2e, 0 14px 32px -16px #2a1f0f99, 0 2px 6px -2px #2a1f0f40;
   color: #f4f1ea;
   opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden;
-  transition: opacity .5s ease, transform .5s ease, visibility 0s linear .5s, background .25s ease;
+  transition: opacity .5s ease, transform .5s ease, visibility 0s linear .5s, background-color .25s ease;
 }
 /* Shown once the turn to the monitor has (nearly) finished. */
-.work-scene[data-turned="true"] .exit-sign { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .5s ease 1.7s, transform .5s ease 1.7s, visibility 0s linear 1.7s, background .25s ease; }
+.work-scene[data-turned="true"] .exit-sign { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .5s ease 1.15s, transform .5s ease 1.15s, visibility 0s linear 1.15s, background-color .25s ease; }
 .exit-door {
   display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(#fbf9f3, #e9e4d7); color: #141516;
+  background-color: #efebe2; color: #141516;
   box-shadow: inset 0 1px 0 #fff, 0 1px 2px #0006;
-  transition: background .25s ease;
+  transition: background-color .25s ease, box-shadow .25s ease;
 }
 .exit-door svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
 .exit-word { font-size: .6875rem; line-height: 1; letter-spacing: .3em; }
-.exit-sign:hover { background: #0d0e0fe6; }
-.exit-sign:hover .exit-door { background: #fff; box-shadow: inset 0 1px 0 #fff, 0 0 0 3px #ffffff33, 0 1px 2px #0006; }
+.exit-sign:hover { background-color: #26282b; }
+.exit-sign:hover .exit-door { background-color: #fff; box-shadow: inset 0 1px 0 #fff, 0 0 0 3px #ffffff33, 0 1px 2px #0006; }
 .exit-sign:hover .exit-door svg { transform: translateX(-2px); }
 /* The turn itself is animated from PortfolioMonitor. */
 .room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); }
@@ -238,7 +296,9 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .model-controls button:first-child, .model-controls button:last-child { padding: 0; font-size: max(16px, 1.3em); letter-spacing: 0; }
 .model-controls button:hover { background: #fff; }
 .model-controls button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
-.event-title { grid-area: title; justify-self: start; margin: 0; font-size: max(22px, 3.4em); line-height: 1; letter-spacing: .12em; white-space: normal; }
+/* Event names keep their own capitals ("B&K's Wedding"), not the site-wide
+   capitals, so a long name stays short enough for one line. */
+.event-title { grid-area: title; justify-self: start; margin: 0; font-size: max(22px, 3.4em); line-height: 1; letter-spacing: -.01em; text-transform: none; white-space: normal; }
 /* The event switcher sits in the screen's lower right corner, over the stage, so
    the photos, 3D model and video get the full height of the screen. */
 .showcase-dots { position: absolute; z-index: 3; right: 2.4em; bottom: 1.2em; display: flex; align-items: center; gap: 2px; }
