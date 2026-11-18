@@ -3,7 +3,7 @@ import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/t
 import { leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
-// `introActive` is true while the opening (OpeningIntro) owns wheel, touch and keys.
+// `introActive` is true while the opening slide (ProductIntro) owns wheel, touch and keys.
 export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, introActive: RefObject<boolean>) {
   const journey = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -243,7 +243,8 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       if (Math.abs(wheelIntent) >= 10) { wheelIntent = 0; playTransition(down); }
     };
     const onTouchStart = (event: TouchEvent) => {
-      if (booking()) { touchStart = null; return; }
+      // A gesture that begins on the opening slide (or the booking form) is not the booth's.
+      if (booking() || introActive.current) { touchStart = null; return; }
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
       touchFromBelow = below();
       touchProgress = scrollY / range();

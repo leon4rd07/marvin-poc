@@ -64,11 +64,19 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
 test("the selfie flashes, prints a polaroid out of the console's slot, and it can be put away", async ({ page }) => {
   // Like the entrance, the selfie effects play even when the OS asks for reduced motion.
   await page.emulateMedia({ reducedMotion: "reduce" });
+  // Note what the page plays: the shutter is a real recording, played as <audio>.
+  await page.addInitScript(() => {
+    const played: string[] = [];
+    (window as unknown as { played: string[] }).played = played;
+    HTMLMediaElement.prototype.play = function () { played.push(this.currentSrc || this.src); return Promise.resolve(); };
+  });
   await page.goto("./#work");
   const papers = page.locator(".console .paper-feed .paper");
   await expect(papers).toHaveCount(0);
   await page.getByRole("button", { name: "Take a selfie" }).click();
   await expect(page.locator(".camera-flash")).toHaveCount(1);
+  expect(await page.evaluate(() => (window as unknown as { played: string[] }).played)).toEqual([expect.stringMatching(/sounds\/shutter\.mp3$/)]);
+  expect((await page.request.get("sounds/shutter.mp3")).headers()["content-type"]).toMatch(/audio\/mpeg/);
   await expect(papers).toHaveCount(1);
   // It comes out of the slot (or, on a slow machine, may already be leaving).
   expect(await papers.first().evaluate(paper => getComputedStyle(paper).animationName)).toMatch(/polaroid-(eject|toss)/);
@@ -110,7 +118,7 @@ test("scrolling down the booth wall reaches the booking section with social link
 
 test("the photos turn round: arrows, keys and dragging bring another photo to the front", async ({ page, isMobile }) => {
   await page.goto("./#work");
-  const front = () => page.locator('.ring .print[data-front="true"] > img').getAttribute("src");
+  const front = () => page.locator('#work .ring .print[data-front="true"] > img').getAttribute("src");
   const first = await front();
   if (!isMobile) {
     await page.getByRole("button", { name: "Next photo" }).click();
@@ -118,13 +126,13 @@ test("the photos turn round: arrows, keys and dragging bring another photo to th
     await page.getByRole("button", { name: "Previous photo" }).click();
     await expect.poll(front).toBe(first);
   }
-  await page.locator(".gallery").focus();
+  await page.locator("#work .gallery").focus();
   await page.keyboard.press("ArrowRight");
   await expect.poll(front).not.toBe(first);
   await page.keyboard.press("ArrowLeft");
   await expect.poll(front).toBe(first);
   // Drag the ring sideways.
-  const box = (await page.locator(".gallery").boundingBox())!;
+  const box = (await page.locator("#work .gallery").boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 - box.width * .3, box.y + box.height / 2, { steps: 8 });
@@ -133,7 +141,7 @@ test("the photos turn round: arrows, keys and dragging bring another photo to th
   // Changing event keeps the photos on the ring, now the new event's.
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).not.toHaveText("Streetscape 2026");
-  await expect(page.locator(".ring .print")).toHaveCount(10);
+  await expect(page.locator("#work .ring .print")).toHaveCount(10);
 });
 
 test("every screen gets the laptop's monitor: same layout, settled as a flat page", async ({ page }) => {

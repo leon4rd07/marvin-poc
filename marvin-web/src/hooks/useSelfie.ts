@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { selfies } from "../data/portfolio";
-import { playPrinter, playShutter, playSwish } from "../lib/sounds";
+import { playShutter, playSwish } from "../lib/sounds";
 
 export type Print = { id: number; photo: (typeof selfies)[number]; closing: boolean };
 
@@ -34,7 +34,6 @@ export function useSelfie() {
       [...open.current].forEach(close);
       open.current.add(id);
       setPrints(list => [...list, { id, photo: selfies[(id - 1) % selfies.length], closing: false }]);
-      playPrinter();
       later(() => close(id), ejectMs + stayMs);
     }, printDelayMs);
   }

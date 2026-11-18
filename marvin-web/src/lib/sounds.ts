@@ -1,5 +1,13 @@
-// Small synthesized sounds (no audio files): a camera shutter and the whirr of
-// an instant-photo printer. Created on demand after a click, so browsers allow them.
+import { asset } from "./assets";
+
+// Sounds for the selfie: a real camera shutter (a recording, public/sounds/
+// shutter.mp3, from the Android Open Source Project under the Apache License 2.0;
+// see public/sounds/NOTICE.txt) and a light paper swish synthesized on the spot.
+//
+// The shutter plays through an <audio> element rather than Web Audio: phones (an
+// iPhone with its ringer switched to silent, especially) keep <audio> audible
+// where they mute Web Audio, and it starts on the tap itself, which browsers allow.
+
 let context: AudioContext | null = null;
 
 function audio() {
@@ -19,85 +27,24 @@ function noise(ctx: AudioContext, seconds: number) {
   return buffer;
 }
 
-// A camera shutter, "ka-chak": two crisp mechanical clicks (the shutter opening,
-// then closing). Each is a very short burst of bright noise with a small metallic
-// ring; there is almost nothing below 1 kHz, so it never sounds soft or blunt.
-export function playShutter() {
-  const ctx = audio();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  const output = ctx.createGain();
-  output.gain.value = .5;
-  output.connect(ctx.destination);
-  for (const [delay, level, ring] of [[0, 1, 3600], [.062, .8, 2900]] as const) {
-    const at = now + delay;
-    // The click: 12 ms of noise between 1 and 7 kHz, with a near-instant attack.
-    const click = ctx.createBufferSource();
-    click.buffer = noise(ctx, .02);
-    const bright = ctx.createBiquadFilter();
-    bright.type = "highpass";
-    bright.frequency.value = 1000;
-    const soft = ctx.createBiquadFilter();
-    soft.type = "lowpass";
-    soft.frequency.value = 7000;
-    const clickLevel = ctx.createGain();
-    clickLevel.gain.setValueAtTime(level, at);
-    clickLevel.gain.exponentialRampToValueAtTime(.001, at + .012);
-    click.connect(bright).connect(soft).connect(clickLevel).connect(output);
-    click.start(at);
-    click.stop(at + .02);
-    // The ring: a narrow band of the same noise, dying away over 35 ms.
-    const tail = ctx.createBufferSource();
-    tail.buffer = noise(ctx, .05);
-    const metal = ctx.createBiquadFilter();
-    metal.type = "bandpass";
-    metal.frequency.value = ring;
-    metal.Q.value = 9;
-    const tailLevel = ctx.createGain();
-    tailLevel.gain.setValueAtTime(level * 2.2, at);
-    tailLevel.gain.exponentialRampToValueAtTime(.001, at + .035);
-    tail.connect(metal).connect(tailLevel).connect(output);
-    tail.start(at);
-    tail.stop(at + .05);
-  }
-}
+const shutterSrc = asset("sounds/shutter.mp3");
+// A few players, so quick taps each get their own click instead of cutting one off.
+const shutters: HTMLAudioElement[] = [];
+let nextShutter = 0;
 
-// The print motor: a light, high gear whirr (band-passed noise buzzing at the
-// gears' rate), in the short stops of the print feeding out. No low hum.
-export function playPrinter(seconds = 2.2) {
-  const ctx = audio();
-  if (!ctx) return;
-  const now = ctx.currentTime;
-  const source = ctx.createBufferSource();
-  source.buffer = noise(ctx, seconds + .1);
-  const band = ctx.createBiquadFilter();
-  band.type = "bandpass";
-  band.frequency.setValueAtTime(2300, now);
-  band.frequency.linearRampToValueAtTime(2700, now + seconds);
-  band.Q.value = 3;
-  // The gears: the level flutters 70 times a second.
-  const gears = ctx.createGain();
-  gears.gain.value = .5;
-  const flutter = ctx.createOscillator();
-  flutter.frequency.value = 70;
-  const depth = ctx.createGain();
-  depth.gain.value = .5;
-  flutter.connect(depth).connect(gears.gain);
-  const level = ctx.createGain();
-  level.gain.setValueAtTime(0, now);
-  // Burst pattern matching the print feeding out in stops.
-  const bursts = [[0, .55], [.7, 1.2], [1.45, 2.1]];
-  for (const [start, end] of bursts) {
-    const a = now + start * seconds / 2.2, b = now + end * seconds / 2.2;
-    level.gain.linearRampToValueAtTime(.16, a + .04);
-    level.gain.setValueAtTime(.16, b - .04);
-    level.gain.linearRampToValueAtTime(0, b);
+export function playShutter() {
+  if (typeof Audio === "undefined") return;
+  if (shutters.length < 3) {
+    const player = new Audio(shutterSrc);
+    player.preload = "auto";
+    player.volume = .9;
+    shutters.push(player);
   }
-  source.connect(band).connect(gears).connect(level).connect(ctx.destination);
-  source.start(now);
-  flutter.start(now);
-  source.stop(now + seconds + .1);
-  flutter.stop(now + seconds + .1);
+  const player = shutters[nextShutter++ % shutters.length];
+  try {
+    player.currentTime = 0;
+    void player.play().catch(() => {});
+  } catch { /* no sound is better than an error */ }
 }
 
 // A light paper swish for putting the photo away.

@@ -98,7 +98,7 @@ test("clean opening, shortcut, events, views, home and history", async ({
   await page.getByRole("button", { name: "Video" }).click();
   await expect(page.locator("video.showcase-video")).toBeVisible();
   await first.click();
-  await expect(page.locator(".print > img")).toHaveCount(10);
+  await expect(page.locator("#work .print > img")).toHaveCount(10);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await expect(page.locator("#work")).toHaveAttribute("inert", "");

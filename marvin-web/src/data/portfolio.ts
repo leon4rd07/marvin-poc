@@ -143,6 +143,17 @@ export const collections: readonly Collection[] = [
     theme: { curtain: "#b9a3e3", sign: "#ffd3e6", sheen: "#9a84cc" },
   },
 ];
+// Marvin's prints, shown on a ring on the opening slide (photos from the pitch
+// deck, cropped 5:6, in public/portfolio/products/). `detail` is the line under the name.
+export type Product = Portrait & { name: string; detail: string };
+export const products: readonly Product[] = [
+  { id: "4r", name: "4R", detail: "Photostrips", src: "portfolio/products/4r.webp", width: 720, height: 864,
+    alt: "4R photostrip prints and photo keychains laid out on a black table" },
+  { id: "xl", name: "XL Strip", detail: "75 × 25 cm", src: "portfolio/products/xl.webp", width: 455, height: 546,
+    alt: "An XL photostrip on a stand under the lit Marvin sign" },
+  { id: "tote", name: "Mini Tote", detail: "25 × 20 cm", src: "portfolio/products/tote.webp", width: 672, height: 806,
+    alt: "A guest holding up a clear mini tote bag with her photos printed inside" },
+];
 // Ways to look at an event on the monitor.
 export const showcaseViews = [
   { id: "photos", label: "Photos" },
