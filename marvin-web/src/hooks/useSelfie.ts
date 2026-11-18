@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { selfies } from "../data/portfolio";
-import { playShutter, playSwish } from "../lib/sounds";
+import { playShutter } from "../lib/sounds";
 
 export type Print = { id: number; photo: (typeof selfies)[number]; closing: boolean };
 
@@ -22,7 +22,6 @@ export function useSelfie() {
   function close(id: number) {
     if (!open.current.delete(id)) return;
     setPrints(list => list.map(print => print.id === id ? { ...print, closing: true } : print));
-    playSwish();
     later(() => setPrints(list => list.filter(print => print.id !== id)), closeMs);
   }
   function snap() {
