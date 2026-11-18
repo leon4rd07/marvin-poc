@@ -50,7 +50,9 @@ test("links straight into the booth, to booking, and ?intro=0 skip the opening",
   await expect(page.locator(".opening")).toHaveCount(0);
 });
 
-test("with reduced motion the opening only fades away", async ({ page }) => {
+test("the opening plays in full even when the system asks for reduced motion", async ({ page }) => {
+  // Laptops with Windows animation effects turned off report reduced motion; like
+  // the walk into the booth, the opening plays anyway.
   await page.emulateMedia({ reducedMotion: "reduce" });
   // Note every phase the opening goes through, from the very start of the page.
   await page.addInitScript(() => {
@@ -63,6 +65,5 @@ test("with reduced motion the opening only fades away", async ({ page }) => {
   });
   await page.goto("./");
   await expect(page.locator(".opening")).toHaveCount(0, { timeout: 20000 });
-  // No countdown, flash or zoom at all: it simply faded.
-  expect(await page.evaluate(() => (window as unknown as { phases: string[] }).phases)).toEqual([]);
+  expect(await page.evaluate(() => (window as unknown as { phases: string[] }).phases)).toEqual(["countdown", "develop", "zoom"]);
 });

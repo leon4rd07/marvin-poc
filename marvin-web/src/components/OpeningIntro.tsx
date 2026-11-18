@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
+import { useReducedMotion } from "../hooks/useReducedMotion";
 import { asset } from "../lib/assets";
 import { sectionFromHash } from "../lib/sections";
 import { clamp } from "../lib/timeline";
@@ -40,11 +41,13 @@ export function OpeningIntro({ activeRef, startActive }: {
   const flash = useRef<HTMLDivElement>(null);
   const caption = useRef<HTMLParagraphElement>(null);
   const [gone, setGone] = useState(!startActive);
+  // Like the entrance, the opening plays even when the system asks for reduced
+  // motion (see useReducedMotion); if that is ever honoured, it only fades.
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     if (!startActive) return;
     const html = document.documentElement;
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     activeRef.current = true;
     html.dataset.intro = "playing";
     let time = 0;
@@ -161,7 +164,7 @@ export function OpeningIntro({ activeRef, startActive }: {
       removeEventListener("hashchange", onHashChange);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [activeRef, startActive]);
+  }, [activeRef, startActive, reduced]);
 
   if (gone) return null;
   return (

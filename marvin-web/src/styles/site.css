@@ -85,10 +85,10 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .opening-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
 
 /* "Scroll" on the booth's front: a hint that the page goes on, shown until you
-   start walking in (and not while the opening plays). */
+   start walking in (and not while the opening plays). "Swipe up" on touch screens. */
 .scroll-cue {
   position: absolute; z-index: 3; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px) + 12px);
-  display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;
   color: var(--ink); font-size: .66rem; letter-spacing: .3em; translate: -50% 0;
   opacity: 0; transition: opacity .4s ease; pointer-events: none;
 }
@@ -96,21 +96,16 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 :root[data-intro="playing"] .scroll-cue { opacity: 0; transition: none; }
 .scroll-cue-label { display: inline-block; white-space: nowrap; padding: .75em 1.1em .75em 1.4em; border-radius: 999px; background: #fbfaf5e6; box-shadow: 0 6px 18px -10px #2a1f0f66, inset 0 0 0 1px #1d1f1a14; }
 .scroll-cue-swipe { display: none; }
-/* A mouse with its wheel rolling down (a finger swiping up on touch screens). */
-.scroll-cue-icon { position: relative; width: 20px; height: 32px; border: 2px solid var(--ink); border-radius: 12px; }
-.scroll-cue-icon::before {
-  content: ""; position: absolute; left: 50%; top: 6px; width: 4px; height: 7px; margin-left: -2px; border-radius: 2px;
-  background: var(--ink); animation: scroll-cue 1.6s cubic-bezier(.5, 0, .3, 1) infinite;
+/* A small arrow bobbing downwards, the same for mouse and touch. */
+.scroll-cue-arrow {
+  width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
+  animation: scroll-cue 1.5s cubic-bezier(.45, 0, .35, 1) infinite;
 }
-@keyframes scroll-cue { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(11px); opacity: 0; } 100% { opacity: 0; } }
+@keyframes scroll-cue { 0%, 100% { transform: translateY(-3px); opacity: .45; } 50% { transform: translateY(4px); opacity: 1; } }
 @media (hover: none) and (pointer: coarse) {
   .scroll-cue-scroll { display: none; }
   .scroll-cue-swipe { display: inline; }
-  .scroll-cue-icon { width: 2px; height: 30px; border: 0; border-radius: 0; background: linear-gradient(#1d1f1a00, #1d1f1a66); }
-  .scroll-cue-icon::before { top: auto; bottom: 0; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; animation-name: scroll-cue-swipe; }
-  @keyframes scroll-cue-swipe { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(-24px); opacity: 0; } 100% { opacity: 0; } }
 }
-@media (prefers-reduced-motion: reduce) { .scroll-cue-icon::before { animation: none; opacity: 1; } }
 .journey { height: calc(100svh + var(--stage-height)); }
 .stage { position: sticky; top: 0; height: var(--stage-height); background: #fff; isolation: isolate; pointer-events: none; }
 .media-surface { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
