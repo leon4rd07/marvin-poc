@@ -1,7 +1,7 @@
 import { asset } from "./assets";
 
-// The selfie's only sound: a real camera shutter (a recording, public/sounds/
-// shutter.mp3, from the Android Open Source Project under the Apache License 2.0;
+// The selfie's only sound: a real DSLR shutter (a recording, public/sounds/
+// shutter.mp3, "Camera Shutter" by caseymoura on freesound.org under CC BY 3.0;
 // see public/sounds/NOTICE.txt). The print leaves silently.
 //
 // The shutter plays through an <audio> element rather than Web Audio: phones (an

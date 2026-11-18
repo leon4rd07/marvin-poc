@@ -137,6 +137,11 @@ export function PortfolioMonitor() {
               </a>
             </li>
           </ul>
+          {/* The selfie's shutter sound is CC BY 3.0, which asks for this credit. */}
+          <p className="closing-credit">
+            Shutter sound: <a href="https://freesound.org/people/caseymoura/sounds/445482" target="_blank" rel="noopener noreferrer">caseymoura</a>,{" "}
+            <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>
+          </p>
         </section>
       </div>
     </>
