@@ -13,7 +13,7 @@ import type { ProductScene } from "../scene/createProductScene";
 // of the booth brings it back. Links straight into the booth, to the booking form
 // (?book) and ?intro=0 skip it.
 
-const leaveMs = 750;           // how long the slide takes to move away (or back)
+const leaveMs = 1500;          // how long the slide takes to move away (or back): slow, unhurried
 const handoffMs = 250;         // the same wheel tick that leaves must not also walk in
 const wheelLeavePx = 40;       // a light scroll is enough to go on to the booth
 const wheelBackPx = 150;       // coming back takes a deliberate scroll up
@@ -199,7 +199,6 @@ export function ProductIntro({ activeRef, startActive }: {
   return (
     <section className="product-intro" ref={root} data-away={away} aria-label="Marvin prints" inert={away}>
       <div className="product-caption" aria-live="polite" aria-atomic="true">
-        <p className="product-eyebrow">Take the moment home</p>
         <h2 className="product-name">{front.name}</h2>
         <p className="product-detail">{front.detail}</p>
       </div>
