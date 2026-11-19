@@ -1,24 +1,48 @@
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { collections, showcaseViews, type Portrait as PortraitData, type ShowcaseView } from "../data/portfolio";
 import { asset } from "../lib/assets";
 import { useRing } from "../hooks/useRing";
+import { sectionFromHash } from "../lib/sections";
 import { wrap } from "../lib/timeline";
 import { BoothModelViewer } from "./BoothModelViewer";
 
-function Portrait({ portrait, front, style, onPick }: {
-  portrait: PortraitData; front: boolean; style: CSSProperties; onPick: () => void;
+// The monitor is a walk away from the opening screen: its photos wait until that
+// screen has loaded (and a moment more), so they do not hold up what is seen first.
+// Opened straight inside the booth, they load at once.
+const photosDelayMs = 2500;
+function usePhotosWanted() {
+  const [wanted, setWanted] = useState(() => sectionFromHash(location.hash) !== null);
+  useEffect(() => {
+    if (wanted) return;
+    let timer = 0;
+    const start = () => { timer = window.setTimeout(() => setWanted(true), photosDelayMs); };
+    if (document.readyState === "complete") start();
+    else addEventListener("load", start, { once: true });
+    return () => { removeEventListener("load", start); window.clearTimeout(timer); };
+  }, [wanted]);
+  return wanted;
+}
+
+// A photo that fails to arrive (a dropped connection) is asked for again, twice,
+// before the print says it is unavailable.
+const retries = 2;
+function Portrait({ portrait, front, style, onPick, load }: {
+  portrait: PortraitData; front: boolean; style: CSSProperties; onPick: () => void; load: boolean;
 }) {
-  const [broken, setBroken] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const broken = attempt > retries;
+  const src = asset(portrait.src) + (attempt > 0 ? `?retry=${attempt}` : "");
   return (
     <figure className="print" data-front={front} style={style} aria-hidden={!front} onClick={front ? undefined : onPick}>
       {broken ? (
         <div className="image-fallback" role="img" aria-label={`${portrait.alt}. Image unavailable.`}>
           <span aria-hidden="true">✳</span>
-          Portrait unavailable
+          Photo unavailable
         </div>
       ) : (
-        <img src={asset(portrait.src)} alt={portrait.alt} width={portrait.width} height={portrait.height}
-          decoding="async" draggable={false} onError={() => setBroken(true)} />
+        <img src={load ? src : undefined} alt={portrait.alt} width={portrait.width} height={portrait.height}
+          decoding="async" draggable={false}
+          onError={() => window.setTimeout(() => setAttempt(value => value + 1), attempt < retries ? 800 * (attempt + 1) : 0)} />
       )}
       <figcaption><img className="print-logo" src={asset("textures/marvin-logo-studio.png")} alt="" width={1086} height={376} draggable={false} /></figcaption>
     </figure>
@@ -34,6 +58,19 @@ export function PortfolioGallery() {
   const current = collections[index];
   const count = current.images.length;
   const ring = useRing(count);
+  const photosWanted = usePhotosWanted();
+  // The ring is out of sight until you walk in, and the browser may hold back
+  // images it cannot see: fetch this event's photos now, so they are ready.
+  useEffect(() => {
+    if (!photosWanted) return;
+    const loads = current.images.map(portrait => {
+      const image = new Image();
+      image.decoding = "async";
+      image.src = asset(portrait.src);
+      return image;
+    });
+    return () => { for (const image of loads) image.src = ""; };
+  }, [photosWanted, current]);
   const views = showcaseViews.filter(view => view.id !== "video" || current.video);
   const view = views.some(option => option.id === chosen) ? chosen : "photos";
 
@@ -67,7 +104,7 @@ export function PortfolioGallery() {
               <div className="ring" data-angle={Math.round(ring.angle)}>
                 {current.images.map((portrait, order) => (
                   <Portrait key={`${current.id}-${order}`} portrait={portrait} front={order === ring.frontIndex}
-                    onPick={() => ring.pick(order)} style={ring.styleFor(order)} />
+                    onPick={() => ring.pick(order)} style={ring.styleFor(order)} load={photosWanted} />
                 ))}
               </div>
               <p className="ring-hint" aria-hidden="true">Drag to spin</p>

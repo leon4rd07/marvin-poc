@@ -90,13 +90,13 @@ test("supplied textures load and gentle wind continues while the rail and camera
 test("each event shows its own photos on the ring, all cropped to fill the print", async ({ page }) => {
   await page.goto("./#work");
   const photos = page.locator("#work .ring .print > img");
-  for (const [event, count] of [["ikea", 11], ["wedding", 10], ["noera", 15]] as const) {
+  for (const [event, count] of [["ikea", 11], ["wedding", 10], ["noera", 23]] as const) {
     await expect(photos).toHaveCount(count);
     for (let index = 0; index < count; index++) {
       const photo = photos.nth(index);
       await expect(photo).toHaveAttribute("src", new RegExp(`events/${event}-${String(index + 1).padStart(2, "0")}\\.webp$`));
       await expect.poll(() => photo.evaluate(image => [(image as HTMLImageElement).naturalWidth,
-        (image as HTMLImageElement).naturalHeight])).toEqual([1000, 1200]);
+        (image as HTMLImageElement).naturalHeight])).toEqual([600, 720]);
     }
     if (event !== "noera") await page.getByRole("button", { name: "Next event" }).click();
   }

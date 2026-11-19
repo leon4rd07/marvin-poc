@@ -9,29 +9,29 @@ const intro = (page: Page) => page.locator(".product-intro");
 // The slide is listening once it has painted its position.
 const ready = (page: Page) => expect(intro(page)).toHaveAttribute("data-position", /\d/);
 
-test("the site opens on the prints: 4R, XL strip and mini tote on a ring that turns", async ({ page }) => {
+test("the site opens on the prints: 4R, XL strip and mini tote, drawn on displays, on a ring that turns", async ({ page }) => {
   await page.goto("./");
   await expect(intro(page)).toHaveAttribute("data-away", "false");
-  const prints = page.locator(".product-gallery .print");
-  await expect(prints).toHaveCount(3);
-  await expect.poll(() => prints.locator("img:not(.print-logo)").evaluateAll(images =>
-    images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)), { timeout: 20000 }).toBe(true);
+  const items = page.locator(".product-gallery .product-item");
+  await expect(items).toHaveCount(3);
+  // Drawings, not photos: nothing to download, no print frame.
+  await expect(items.locator("svg.product-art")).toHaveCount(3);
+  await expect(page.locator(".product-intro img")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next product" })).toHaveCount(0);
   const name = page.locator(".product-name");
-  // It turns on its own until touched.
+  // The name sits above the ring.
+  const caption = (await page.locator(".product-caption").boundingBox())!;
+  const ring = (await page.locator(".product-gallery .ring").boundingBox())!;
+  expect(caption.y + caption.height).toBeLessThanOrEqual(ring.y + 1);
+  // It turns on its own while left alone.
   await expect(name).toHaveText("XL Strip", { timeout: 10000 });
-  await page.getByRole("button", { name: "Next product" }).click();
+  await page.getByRole("button", { name: "Show Mini Tote" }).click();
   await expect(name).toHaveText("Mini Tote");
   await expect(page.locator(".product-detail")).toHaveText("25 × 20 cm");
-  await page.getByRole("button", { name: "Show 4R" }).click();
-  await expect(name).toHaveText("4R");
-  // Touched: it stays put now.
-  await page.waitForTimeout(4000);
-  await expect(name).toHaveText("4R");
-  // The arrows sit above the cards.
-  const arrow = page.getByRole("button", { name: "Next product" });
-  const box = (await arrow.boundingBox())!;
-  expect(await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest("button")?.getAttribute("aria-label"),
-    [box.x + box.width / 2, box.y + box.height / 2])).toBe("Next product");
+  // Touched: it waits a while, then carries on by itself.
+  await page.waitForTimeout(3000);
+  await expect(name).toHaveText("Mini Tote");
+  await expect(name).toHaveText("4R", { timeout: 15000 });
 });
 
 test("scrolling down goes straight to the booth; a deliberate scroll up comes back", async ({ page }) => {

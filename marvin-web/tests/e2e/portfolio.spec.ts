@@ -41,9 +41,11 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
   const viewer = page.locator(".model-viewer");
   await expect(viewer).not.toHaveAttribute("data-state", "loading", { timeout: 60000 });
   if ((await viewer.getAttribute("data-state")) === "ready") {
-    await expect(page.getByRole("button", { name: "Open the curtain" })).toBeVisible();
-    // Every event's models turn on their own until touched, then stay put.
+    // The wedding and Noera show their backdrop on its own: no booth, so no curtain.
     const canvas = viewer.locator(".model-canvas");
+    await expect(canvas).toHaveAttribute("aria-label", /event's backdrop/);
+    await expect(page.getByRole("button", { name: "Open the curtain" })).toHaveCount(0);
+    // Every event's models turn on their own until touched, then stay put.
     for (const [index, name] of ["B&K's Wedding", "Noera's 8th Anniversary", "Streetscape 2026"].entries()) {
       if (index > 0) await page.getByRole("button", { name: "Next event" }).click();
       await expect(title).toHaveText(name);
@@ -53,8 +55,9 @@ test("each event has photos, video and a 3D booth, and slides left and right", a
       await expect.poll(async () => Number(await canvas.getAttribute("data-yaw")), { timeout: 60000 }).toBeGreaterThan(start);
     }
     // IKEA's own printed booth has its door printed on: no curtain to open.
+    await expect(canvas).toHaveAttribute("aria-label", /photobooth made for this event/);
     await expect(page.getByRole("button", { name: "Open the curtain" })).toHaveCount(0);
-    await page.getByRole("button", { name: "Turn the booth left" }).click();
+    await page.getByRole("button", { name: "Turn left" }).click();
     await expect(canvas).toHaveAttribute("data-turntable", "off");
   } else {
     await expect(viewer.getByRole("status")).toContainText("isn’t available");

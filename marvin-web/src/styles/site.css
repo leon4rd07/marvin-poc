@@ -48,33 +48,33 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stack-main { font-size: 1em; line-height: 1.05; color: var(--ink); }
 .stack-sub { margin-top: .5em; font-size: max(.6em, 9px); line-height: 1.2; letter-spacing: .24em; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
-/* The opening slide (ProductIntro.tsx): Marvin's prints on the same ring as the
-   event photos, over the booth until it is scrolled away (moved up by the script). */
+/* The opening slide (ProductIntro.tsx): Marvin's prints, drawn on white displays,
+   on the same ring as the event photos, over the booth until it is scrolled away
+   (moved up by the script). The name of the print in front is above the ring. */
 .product-intro {
   position: fixed; inset: var(--header) 0 0; z-index: 20; overflow: hidden;
   display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; justify-items: center; align-items: center;
   padding: clamp(18px, 4svh, 44px) 16px clamp(76px, 12svh, 112px);
-  background: radial-gradient(ellipse at 50% 40%, #fbf6ec, #eadfca 80%); will-change: transform;
+  background: #fff; will-change: transform;
 }
 .product-intro[data-away="true"] { visibility: hidden; pointer-events: none; }
-.product-eyebrow { margin: 0; color: var(--muted); font-size: .7rem; letter-spacing: .3em; }
-.product-stage {
-  --u: min(1.15svh, 1.9vw);
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2vw;
-  width: min(100%, 980px); height: 100%; min-height: 0;
-}
-.product-stage .slide-arrow { grid-row: 1; }
-/* (.product-stage in front: the monitor's .gallery rule further down would otherwise win.) */
-.product-stage .product-gallery { position: relative; inset: auto; grid-column: 2; grid-row: 1; height: 100%; isolation: isolate; }
-.product-gallery .ring { --card: min(44svh * .735, 56vw, 340px); margin-top: 0; }
-.product-caption { text-align: center; margin-top: clamp(8px, 2svh, 22px); }
+.product-caption { text-align: center; }
+.product-eyebrow { margin: 0 0 clamp(8px, 1.6svh, 16px); color: var(--muted); font-size: .7rem; letter-spacing: .3em; }
 .product-name { margin: 0; font-size: clamp(1.9rem, 4.6vw, 3.2rem); line-height: 1; letter-spacing: -.01em; text-transform: none; }
 .product-detail { margin: .55em 0 0; color: var(--muted); font-size: .72rem; letter-spacing: .3em; }
+.product-stage { width: min(100%, 980px); height: 100%; min-height: 0; }
+/* (.product-stage in front: the monitor's .gallery rule further down would otherwise win.) */
+.product-stage .product-gallery { position: relative; inset: auto; height: 100%; isolation: isolate; }
+.product-gallery .ring { --card: min(50svh * .735, 64vw, 380px); margin-top: 0; }
+.product-item { position: absolute; inset: 0; margin: 0; will-change: transform; }
+.product-item:not([data-front="true"]) { cursor: pointer; }
+.product-art { display: block; width: 100%; height: 100%; pointer-events: none; }
+.product-gallery:focus-visible .product-item[data-front="true"] { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 8px; }
 .product-dots { display: flex; gap: 2px; margin-top: clamp(4px, 1svh, 12px); }
 .product-scroll.scroll-cue { opacity: 1; border: 0; background: none; padding: 0; cursor: pointer; pointer-events: auto; font: inherit; color: var(--ink); }
 
 /* "Scroll" on the booth's front: a hint that the page goes on, shown until you
-   start walking in (and not while the opening slide is up). "Swipe up" on touch screens. */
+   start walking in (and not while the opening slide is up). */
 .scroll-cue {
   position: absolute; z-index: 3; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px) + 12px);
   display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;
@@ -84,17 +84,12 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stage[data-phase="booth"] .scroll-cue { opacity: 1; transition-delay: .3s; }
 :root[data-intro="open"] .stage .scroll-cue { opacity: 0; transition: none; }
 .scroll-cue-label { display: inline-block; white-space: nowrap; padding: .75em 1.1em .75em 1.4em; border-radius: 999px; background: #fbfaf5e6; box-shadow: 0 6px 18px -10px #2a1f0f66, inset 0 0 0 1px #1d1f1a14; }
-.scroll-cue-swipe { display: none; }
 /* A small arrow bobbing downwards, the same for mouse and touch. */
 .scroll-cue-arrow {
   width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
   animation: scroll-cue 1.5s cubic-bezier(.45, 0, .35, 1) infinite;
 }
 @keyframes scroll-cue { 0%, 100% { transform: translateY(-3px); opacity: .45; } 50% { transform: translateY(4px); opacity: 1; } }
-@media (hover: none) and (pointer: coarse) {
-  .scroll-cue-scroll { display: none; }
-  .scroll-cue-swipe { display: inline; }
-}
 .journey { height: calc(100svh + var(--stage-height)); }
 .stage { position: sticky; top: 0; height: var(--stage-height); background: #fff; isolation: isolate; pointer-events: none; }
 .media-surface { position: absolute; inset: var(--header) 0 0; pointer-events: none; }
@@ -259,6 +254,7 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 }
 .print:not([data-front="true"]) { cursor: pointer; }
 .print > img, .image-fallback { display: block; width: 100%; height: auto; aspect-ratio: 5 / 6; object-fit: cover; background: #fff; pointer-events: none; }
+.print > img:not([src]) { visibility: hidden; }
 .image-fallback { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; background: #ece6d6; padding: 5px; font-size: max(10px, .9em); text-align: center; overflow-wrap: anywhere; }
 .image-fallback > span { font-size: 1.6em; }
 .print figcaption { display: flex; justify-content: flex-start; padding: .7em 0 .8em; }

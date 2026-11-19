@@ -16,7 +16,7 @@ export function EntranceJourney({ homeRef, introActive }: {
         <div className="stage" ref={stage} data-active={initialDirect} data-phase={initialDirect ? "monitor" : "booth"}>
           <BoothScene surfaceRef={surface} progress={sceneProgress} enabled={sceneEnabled} onPortal={onPortal} />
           <p className="scroll-cue" aria-hidden="true">
-            <span className="scroll-cue-label"><span className="scroll-cue-scroll">Scroll to step inside</span><span className="scroll-cue-swipe">Swipe up to step inside</span></span>
+            <span className="scroll-cue-label">Scroll</span>
             <svg className="scroll-cue-arrow" viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
           </p>
         </div>

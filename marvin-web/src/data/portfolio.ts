@@ -12,12 +12,14 @@ export type PortfolioVideo = { src: string; poster: string; width: number; heigh
 // Colours of the 3D booth for an event (curtain tint, sign glow, curtain sheen).
 export type EventTheme = { curtain?: string; sign?: string; sheen?: string };
 // For the 3D view (see scene/buildBackdrop and scene/buildWrappedBooth):
-// - backdrop: a photo of the event's backdrop with a transparent background, shown
-//   next to the booth; `width` is its width in the scene (the booth is about 3.1).
+// - backdrop: a photo of the event's backdrop, shown on its own in the 3D view
+//   (instead of the booth); `width` is its width in the scene. A photo with a
+//   transparent background stands as a gently folded cloth; with `board` (the colour
+//   of its edges and back) it is a flat, rigid wall, the photo filling its front.
 // - wrap: a booth made for the event, printed with its own design: the drawings of
 //   the front, back and both sides, the sign on the roof box, and the colour of
 //   the unprinted parts. It is shown instead of the standard Marvin booth.
-export type EventBackdrop = { src: string; width: number };
+export type EventBackdrop = { src: string; width: number; board?: string };
 export type EventBoothWrap = { front: string; back: string; left: string; right: string; sign: string; color: string };
 export type Collection = {
   id: string;
@@ -32,10 +34,11 @@ export type Collection = {
 };
 
 // Photos of an event, in public/portfolio/events/<event>-01.webp, -02.webp, … in the
-// order given (cropped 5:6, 1000 × 1200, as the prints on the ring show them).
+// order given (cropped 5:6, 600 × 720: the prints on the ring are never shown wider
+// than about 250 pixels, so this stays sharp on a phone and keeps the files light).
 const eventPhotos = (event: string, alts: readonly string[]): Portrait[] => alts.map((alt, index) => {
   const id = `${event}-${String(index + 1).padStart(2, "0")}`;
-  return { id, src: `portfolio/events/${id}.webp`, alt, width: 1000, height: 1200 };
+  return { id, src: `portfolio/events/${id}.webp`, alt, width: 600, height: 720 };
 });
 
 // The selfie button prints one of these on the polaroid, in turn (square,
@@ -138,21 +141,27 @@ export const collections: readonly Collection[] = [
       "The curved corridor lined with lilac portrait banners",
       "The butterfly backdrop and anniversary flowers before the guests arrive",
       "Two crew members setting up the laptop and printer by the backdrop",
+      "A guest in a navy ruffled gown posing at the sequinned Noera wall as a videographer films",
+      "A guest holding up a giant Noera bottle beside a woman in a navy gown",
+      "Guests filming a couple posing at the Noera Eightfinity backdrop",
+      "A woman in a navy lace gown with a pink handbag beside the anniversary flowers",
+      "A smiling guest pointing at her print at the butterfly backdrop",
+      "A guest in a hijab checking her phone next to a woman in a navy gown",
+      "A couple posing at the butterfly backdrop as a light flashes",
+      "A man photographing a woman with a lilac tote at the butterfly backdrop",
     ]),
     video: { src: "portfolio/videos/noera.mp4", poster: "portfolio/videos/noera.webp", width: 720, height: 1280, label: "Noera Eightfinity, the 8th anniversary clip" },
     theme: { curtain: "#b9a3e3", sign: "#ffd3e6", sheen: "#9a84cc" },
+    backdrop: { src: "portfolio/backdrops/noera.webp", width: 2.6, board: "#8a7bbd" },
   },
 ];
-// Marvin's prints, shown on a ring on the opening slide (photos from the pitch
-// deck, cropped 5:6, in public/portfolio/products/). `detail` is the line under the name.
-export type Product = Portrait & { name: string; detail: string };
+// Marvin's prints, shown on a ring on the opening slide, each drawn on a display
+// stand (components/ProductArt.tsx, by `id`). `detail` is the line under the name.
+export type Product = { id: "4r" | "xl" | "tote"; name: string; detail: string; alt: string };
 export const products: readonly Product[] = [
-  { id: "4r", name: "4R", detail: "Photostrips", src: "portfolio/products/4r.webp", width: 720, height: 864,
-    alt: "4R photostrip prints and photo keychains laid out on a black table" },
-  { id: "xl", name: "XL Strip", detail: "75 × 25 cm", src: "portfolio/products/xl.webp", width: 455, height: 546,
-    alt: "An XL photostrip on a stand under the lit Marvin sign" },
-  { id: "tote", name: "Mini Tote", detail: "25 × 20 cm", src: "portfolio/products/tote.webp", width: 672, height: 806,
-    alt: "A guest holding up a clear mini tote bag with her photos printed inside" },
+  { id: "4r", name: "4R", detail: "Photostrips", alt: "A 4R print with two photostrips, standing on a display" },
+  { id: "xl", name: "XL Strip", detail: "75 × 25 cm", alt: "A tall XL photostrip in its stand on a display" },
+  { id: "tote", name: "Mini Tote", detail: "25 × 20 cm", alt: "A clear mini tote bag with photos printed inside, on a display" },
 ];
 // Ways to look at an event on the monitor.
 export const showcaseViews = [

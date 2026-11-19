@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { products } from "../data/portfolio";
 import { useRing } from "../hooks/useRing";
-import { asset } from "../lib/assets";
 import { sectionFromHash } from "../lib/sections";
 import { clamp } from "../lib/timeline";
+import { ProductArt } from "./ProductArt";
 
-// The opening slide: Marvin's prints (4R, XL strip, mini tote) on the same ring as
-// the event photos on the monitor, to spin by dragging, the arrows or the dots.
-// It turns by itself until touched. Scrolling down (wheel, swipe up, PageDown,
+// The opening slide: Marvin's prints (4R, XL strip, mini tote), drawn on white
+// displays, on the same ring as the event photos on the monitor, to spin by
+// dragging, the arrow keys or the dots. Left alone, it turns by itself. Scrolling down (wheel, swipe up, PageDown,
 // arrow down, space) slides it away to the booth; a deliberate scroll up in front
 // of the booth brings it back. Links straight into the booth, to the booking form
 // (?book) and ?intro=0 skip it.
 
 const leaveMs = 750;           // how long the slide takes to move away (or back)
-const autoTurnMs = 3200;       // the ring turns on its own this often until touched
+const autoTurnMs = 3200;       // left alone, the ring turns on its own this often
+const idleMs = 5000;           // and starts again this long after it was last touched
 const handoffMs = 250;         // the same wheel tick that leaves must not also walk in
 const wheelLeavePx = 40;       // a light scroll is enough to go on to the booth
 const wheelBackPx = 150;       // coming back takes a deliberate scroll up
@@ -29,17 +30,23 @@ export function ProductIntro({ activeRef, startActive }: {
 }) {
   const root = useRef<HTMLElement>(null);
   const [away, setAway] = useState(!startActive);
-  const [touched, setTouched] = useState(false);
-  const ring = useRing(products.length);
+  const ring = useRing(products.length, { shade: false });
   const front = products[ring.frontIndex];
-  const { spin } = ring;
+  // How long it has been left alone (counted in turns of the timer below), and the
+  // latest ring (its functions change each render).
+  const idle = useRef(Infinity);
+  const latest = useRef(ring);
+  useEffect(() => { latest.current = ring; });
 
-  // Turn by itself until the visitor takes over (and only while it is on screen).
+  // Turn by itself while left alone (and only while it is on screen).
   useEffect(() => {
-    if (touched || away) return;
-    const timer = window.setInterval(() => spin(1), autoTurnMs);
+    if (away) return;
+    const timer = window.setInterval(() => {
+      idle.current += autoTurnMs;
+      if (!latest.current.dragging && idle.current > idleMs) latest.current.spin(1);
+    }, autoTurnMs);
     return () => window.clearInterval(timer);
-  }, [touched, away, spin]);
+  }, [away]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -181,31 +188,29 @@ export function ProductIntro({ activeRef, startActive }: {
     };
   }, [activeRef, startActive]);
 
-  const takeOver = () => setTouched(true);
+  const takeOver = () => { idle.current = 0; };
   return (
     <section className="product-intro" ref={root} data-away={away} aria-label="Marvin prints" inert={away}>
-      <p className="product-eyebrow">Take the moment home</p>
+      <div className="product-caption" aria-live="polite" aria-atomic="true">
+        <p className="product-eyebrow">Take the moment home</p>
+        <h2 className="product-name">{front.name}</h2>
+        <p className="product-detail">{front.detail}</p>
+      </div>
       <div className="product-stage">
-        <button type="button" className="slide-arrow" data-side="prev" aria-label="Previous product" onClick={() => { takeOver(); ring.spin(-1); }}>‹</button>
         <div className="gallery product-gallery" data-dragging={ring.dragging}
           role="group" aria-roledescription="carousel" aria-label="Marvin prints. Drag or use the arrow keys to turn."
           tabIndex={0} onKeyDown={event => { takeOver(); ring.onKeyDown(event); }}
           {...ring.handlers} onPointerDown={event => { takeOver(); ring.handlers.onPointerDown(event); }}>
           <div className="ring" data-angle={Math.round(ring.angle)}>
             {products.map((product, order) => (
-              <figure key={product.id} className="print" data-front={order === ring.frontIndex} style={ring.styleFor(order)}
-                aria-hidden={order !== ring.frontIndex} onClick={order === ring.frontIndex ? undefined : () => { takeOver(); ring.pick(order); }}>
-                <img src={asset(product.src)} alt={product.alt} width={product.width} height={product.height} decoding="async" draggable={false} />
-                <figcaption><img className="print-logo" src={asset("textures/marvin-logo-studio.png")} alt="" width={1086} height={376} draggable={false} /></figcaption>
+              <figure key={product.id} className="product-item" data-front={order === ring.frontIndex} style={ring.styleFor(order)}
+                role="img" aria-label={product.alt} aria-hidden={order !== ring.frontIndex}
+                onClick={order === ring.frontIndex ? undefined : () => { takeOver(); ring.pick(order); }}>
+                <ProductArt product={product} />
               </figure>
             ))}
           </div>
         </div>
-        <button type="button" className="slide-arrow" data-side="next" aria-label="Next product" onClick={() => { takeOver(); ring.spin(1); }}>›</button>
-      </div>
-      <div className="product-caption" aria-live="polite" aria-atomic="true">
-        <h2 className="product-name">{front.name}</h2>
-        <p className="product-detail">{front.detail}</p>
       </div>
       <div className="product-dots" role="group" aria-label="Prints">
         {products.map((product, order) => (
@@ -215,7 +220,7 @@ export function ProductIntro({ activeRef, startActive }: {
       </div>
       <button type="button" className="scroll-cue product-scroll" aria-label="Step inside the booth"
         onClick={event => event.currentTarget.closest("section")?.dispatchEvent(new Event("marvin:leave-intro"))}>
-        <span className="scroll-cue-label"><span className="scroll-cue-scroll">Scroll to step inside</span><span className="scroll-cue-swipe">Swipe up to step inside</span></span>
+        <span className="scroll-cue-label">Scroll</span>
         <svg className="scroll-cue-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
       </button>
     </section>
