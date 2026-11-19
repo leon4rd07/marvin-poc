@@ -5,9 +5,7 @@ import { wrap } from "../lib/timeline";
 // card at the side. Used for an event's photos on the monitor and for the products
 // on the opening slide. What is drawn eases towards `angle` (a damped spring), so
 // every turn and snap glides; while dragging it follows the pointer directly.
-// `shade`: cards further back are also drawn darker (photos); without it they only
-// fade (drawings on white, which would turn grey).
-export function useRing(count: number, { shade = true }: { shade?: boolean } = {}) {
+export function useRing(count: number) {
   const [angle, setAngle] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [shown, setShown] = useState(0);
@@ -90,7 +88,7 @@ export function useRing(count: number, { shade = true }: { shade?: boolean } = {
     return {
       transform: `translateX(${(across * 118).toFixed(2)}%) scale(${(.7 + .3 * near).toFixed(4)})`,
       zIndex: Math.round(near * 100) + 100,
-      filter: shade ? `brightness(${(.6 + .4 * near).toFixed(3)}) saturate(${(.55 + .45 * near).toFixed(3)})` : undefined,
+      filter: `brightness(${(.6 + .4 * near).toFixed(3)}) saturate(${(.55 + .45 * near).toFixed(3)})`,
       opacity: near < -.25 ? Math.max(0, (near + .7) / .45) : 1,
     };
   }

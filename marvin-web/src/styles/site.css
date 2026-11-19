@@ -62,14 +62,12 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .product-eyebrow { margin: 0 0 clamp(8px, 1.6svh, 16px); color: var(--muted); font-size: .7rem; letter-spacing: .3em; }
 .product-name { margin: 0; font-size: clamp(1.9rem, 4.6vw, 3.2rem); line-height: 1; letter-spacing: -.01em; text-transform: none; }
 .product-detail { margin: .55em 0 0; color: var(--muted); font-size: .72rem; letter-spacing: .3em; }
-.product-stage { width: min(100%, 980px); height: 100%; min-height: 0; }
-/* (.product-stage in front: the monitor's .gallery rule further down would otherwise win.) */
-.product-stage .product-gallery { position: relative; inset: auto; height: 100%; isolation: isolate; }
-.product-gallery .ring { --card: min(50svh * .735, 64vw, 380px); margin-top: 0; }
-.product-item { position: absolute; inset: 0; margin: 0; will-change: transform; }
-.product-item:not([data-front="true"]) { cursor: pointer; }
-.product-art { display: block; width: 100%; height: 100%; pointer-events: none; }
-.product-gallery:focus-visible .product-item[data-front="true"] { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: 8px; }
+.product-stage { position: relative; width: 100%; height: 100%; min-height: 0; touch-action: none; cursor: grab; outline: none; }
+.product-stage[data-dragging="true"] { cursor: grabbing; }
+.product-stage:focus-visible { box-shadow: inset 0 0 0 3px var(--focus); border-radius: 12px; }
+.product-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .6s ease; }
+.product-stage[data-state="ready"] .product-canvas { opacity: 1; }
+.product-flat { position: absolute; inset: 8% 0; margin: auto; max-width: 70%; max-height: 84%; object-fit: contain; box-shadow: 0 18px 40px rgb(0 0 0 / .14); }
 .product-dots { display: flex; gap: 2px; margin-top: clamp(4px, 1svh, 12px); }
 .product-scroll.scroll-cue { opacity: 1; border: 0; background: none; padding: 0; cursor: pointer; pointer-events: auto; font: inherit; color: var(--ink); }
 

@@ -1,20 +1,19 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { products } from "../data/portfolio";
-import { useRing } from "../hooks/useRing";
+import { asset } from "../lib/assets";
 import { sectionFromHash } from "../lib/sections";
 import { clamp } from "../lib/timeline";
-import { ProductArt } from "./ProductArt";
+import type { ProductScene } from "../scene/createProductScene";
 
-// The opening slide: Marvin's prints (4R, XL strip, mini tote), drawn on white
-// displays, on the same ring as the event photos on the monitor, to spin by
-// dragging, the arrow keys or the dots. Left alone, it turns by itself. Scrolling down (wheel, swipe up, PageDown,
+// The opening slide: Marvin's prints (4R, XL strip in its sleeve, mini tote) as 3D
+// models on white displays, on a turntable that turns slowly all the time
+// (scene/createProductScene.ts). Drag it, use the arrow keys or the dots to bring
+// another round; the name of the one in front is above. Scrolling down (wheel, swipe up, PageDown,
 // arrow down, space) slides it away to the booth; a deliberate scroll up in front
 // of the booth brings it back. Links straight into the booth, to the booking form
 // (?book) and ?intro=0 skip it.
 
 const leaveMs = 750;           // how long the slide takes to move away (or back)
-const autoTurnMs = 3200;       // left alone, the ring turns on its own this often
-const idleMs = 5000;           // and starts again this long after it was last touched
 const handoffMs = 250;         // the same wheel tick that leaves must not also walk in
 const wheelLeavePx = 40;       // a light scroll is enough to go on to the booth
 const wheelBackPx = 150;       // coming back takes a deliberate scroll up
@@ -30,23 +29,32 @@ export function ProductIntro({ activeRef, startActive }: {
 }) {
   const root = useRef<HTMLElement>(null);
   const [away, setAway] = useState(!startActive);
-  const ring = useRing(products.length, { shade: false });
-  const front = products[ring.frontIndex];
-  // How long it has been left alone (counted in turns of the timer below), and the
-  // latest ring (its functions change each render).
-  const idle = useRef(Infinity);
-  const latest = useRef(ring);
-  useEffect(() => { latest.current = ring; });
+  const host = useRef<HTMLDivElement>(null);
+  const scene = useRef<ProductScene | null>(null);
+  const [frontIndex, setFrontIndex] = useState(0);
+  // "loading" until the models are drawn; "failed" (no WebGL): the front print's
+  // artwork is shown flat instead.
+  const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
+  const front = products[frontIndex];
 
-  // Turn by itself while left alone (and only while it is on screen).
   useEffect(() => {
-    if (away) return;
-    const timer = window.setInterval(() => {
-      idle.current += autoTurnMs;
-      if (!latest.current.dragging && idle.current > idleMs) latest.current.spin(1);
-    }, autoTurnMs);
-    return () => window.clearInterval(timer);
-  }, [away]);
+    let disposed = false;
+    void import("../scene/createProductScene").then(({ createProductScene }) => {
+      if (disposed || !host.current) return;
+      try {
+        scene.current = createProductScene(host.current, {
+          products: products.map(product => ({ id: product.id, src: asset(product.src) })),
+          onFront: setFrontIndex,
+        });
+        setState("ready");
+      } catch {
+        setState("failed");
+      }
+    }).catch(() => { if (!disposed) setState("failed"); });
+    return () => { disposed = true; scene.current?.dispose(); scene.current = null; };
+  }, []);
+  // Drawn only while the slide is on screen.
+  useEffect(() => { scene.current?.setRunning(!away); }, [away, state]);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -188,7 +196,6 @@ export function ProductIntro({ activeRef, startActive }: {
     };
   }, [activeRef, startActive]);
 
-  const takeOver = () => { idle.current = 0; };
   return (
     <section className="product-intro" ref={root} data-away={away} aria-label="Marvin prints" inert={away}>
       <div className="product-caption" aria-live="polite" aria-atomic="true">
@@ -196,26 +203,19 @@ export function ProductIntro({ activeRef, startActive }: {
         <h2 className="product-name">{front.name}</h2>
         <p className="product-detail">{front.detail}</p>
       </div>
-      <div className="product-stage">
-        <div className="gallery product-gallery" data-dragging={ring.dragging}
-          role="group" aria-roledescription="carousel" aria-label="Marvin prints. Drag or use the arrow keys to turn."
-          tabIndex={0} onKeyDown={event => { takeOver(); ring.onKeyDown(event); }}
-          {...ring.handlers} onPointerDown={event => { takeOver(); ring.handlers.onPointerDown(event); }}>
-          <div className="ring" data-angle={Math.round(ring.angle)}>
-            {products.map((product, order) => (
-              <figure key={product.id} className="product-item" data-front={order === ring.frontIndex} style={ring.styleFor(order)}
-                role="img" aria-label={product.alt} aria-hidden={order !== ring.frontIndex}
-                onClick={order === ring.frontIndex ? undefined : () => { takeOver(); ring.pick(order); }}>
-                <ProductArt product={product} />
-              </figure>
-            ))}
-          </div>
-        </div>
+      <div className="product-stage" ref={host} data-state={state}
+        role="img" aria-roledescription="carousel" tabIndex={0}
+        aria-label={`${front.alt}. Drag or use the arrow keys to turn.`}
+        onKeyDown={event => {
+          if (event.key === "ArrowRight") { event.preventDefault(); scene.current?.turn(1); }
+          if (event.key === "ArrowLeft") { event.preventDefault(); scene.current?.turn(-1); }
+        }}>
+        {state === "failed" && <img className="product-flat" src={asset(front.src)} alt="" draggable={false} />}
       </div>
       <div className="product-dots" role="group" aria-label="Prints">
         {products.map((product, order) => (
           <button type="button" className="event-dot" key={product.id} aria-label={`Show ${product.name}`}
-            aria-current={order === ring.frontIndex} onClick={() => { takeOver(); ring.pick(order); }} />
+            aria-current={order === frontIndex} onClick={() => scene.current?.show(order)} />
         ))}
       </div>
       <button type="button" className="scroll-cue product-scroll" aria-label="Step inside the booth"

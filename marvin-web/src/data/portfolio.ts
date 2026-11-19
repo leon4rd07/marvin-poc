@@ -155,13 +155,19 @@ export const collections: readonly Collection[] = [
     backdrop: { src: "portfolio/backdrops/noera.webp", width: 2.6, board: "#8a7bbd" },
   },
 ];
-// Marvin's prints, shown on a ring on the opening slide, each drawn on a display
-// stand (components/ProductArt.tsx, by `id`). `detail` is the line under the name.
-export type Product = { id: "4r" | "xl" | "tote"; name: string; detail: string; alt: string };
+// Marvin's prints, as 3D models on a slowly turning stand on the opening slide
+// (scene/createProductScene.ts builds each one by `id`). `src` is what is printed
+// on it (public/portfolio/products/: the 4R strips are from the pitch deck, the XL
+// strip and the tote card are put together from real booth photos and the B&K frame).
+// `detail` is the line under the name.
+export type Product = { id: "4r" | "xl" | "tote"; name: string; detail: string; src: string; alt: string };
 export const products: readonly Product[] = [
-  { id: "4r", name: "4R", detail: "Photostrips", alt: "A 4R print with two photostrips, standing on a display" },
-  { id: "xl", name: "XL Strip", detail: "75 × 25 cm", alt: "A tall XL photostrip in its stand on a display" },
-  { id: "tote", name: "Mini Tote", detail: "25 × 20 cm", alt: "A clear mini tote bag with photos printed inside, on a display" },
+  { id: "4r", name: "4R", detail: "Photostrips", src: "portfolio/products/4r.webp",
+    alt: "A 4R print of two photostrips on a clear acrylic easel" },
+  { id: "xl", name: "XL Strip", detail: "75 × 25 cm", src: "portfolio/products/xl.webp",
+    alt: "A long XL photostrip in a clear sleeve bag with handles, hanging from a chrome stand" },
+  { id: "tote", name: "Mini Tote", detail: "25 × 20 cm", src: "portfolio/products/tote.webp",
+    alt: "A clear mini tote bag with a printed wedding photo card inside" },
 ];
 // Ways to look at an event on the monitor.
 export const showcaseViews = [
