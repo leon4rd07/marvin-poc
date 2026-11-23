@@ -155,9 +155,9 @@ export const collections: readonly Collection[] = [
     backdrop: { src: "portfolio/backdrops/noera.webp", width: 2.6, board: "#8a7bbd" },
   },
 ];
-// Marvin's prints, as 3D models on slowly turning stands, on the opening slide and
-// under the monitor (scene/createProductScene.ts builds each one by `id`). `src` is
-// what is printed on it: real prints from Marvin's booths (public/portfolio/products/:
+// Marvin's prints, as 3D models on slowly turning stands, under the monitor
+// (scene/createProductScene.ts builds each one by `id`). `src` is what is printed
+// on it: real prints from Marvin's booths (public/portfolio/products/:
 // the 4R from Streetscape 2026 at IKEA, the XL strip from Jetour, the tote card from
 // Noera's Eightfinity).
 // `detail` is the line under the name.

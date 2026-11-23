@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { clamp, createSceneProgress, timeline, type PortalFrame } from "../lib/timeline";
-import { bookFlowEvent, enterEvent, leaveEvent, leaveIntroEvent, sectionFromHash, type Section } from "../lib/sections";
+import { bookFlowEvent, enterEvent, leaveEvent, sectionFromHash, type Section } from "../lib/sections";
 import { useReducedMotion } from "./useReducedMotion";
 
-// `introActive` is true while the opening slide (ProductIntro) owns wheel, touch and keys.
-export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, introActive: RefObject<boolean>) {
+export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>) {
   const journey = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
@@ -223,7 +222,6 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
     const booking = () => document.documentElement.dataset.booking === "open";
     const handlesDirection = (down: boolean) => down ? scrollY < range() - 2 : scrollY <= range() + 2 && scrollY > 0;
     const onWheel = (event: WheelEvent) => {
-      if (introActive.current) return;
       if (locked && !transition || booking()) return;
       if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || event.deltaY === 0) return;
       const now = performance.now();
@@ -260,14 +258,13 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       if (Math.abs(wheelIntent) >= 10) { wheelIntent = 0; playTransition(down); }
     };
     const onTouchStart = (event: TouchEvent) => {
-      // A gesture that begins on the opening slide (or the booking form) is not the booth's.
-      if (booking() || introActive.current) { touchStart = null; return; }
+      // A gesture that begins on the booking form is not the booth's.
+      if (booking()) { touchStart = null; return; }
       touchStart = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
       touchFromBelow = below();
       touchProgress = scrollY / range();
     };
     const onTouchMove = (event: TouchEvent) => {
-      if (introActive.current) return;
       if (locked && !transition || booking()) return;
       if (!touchStart || event.touches.length !== 1) return;
       const dx = touchStart.x - event.touches[0].clientX;
@@ -292,7 +289,6 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       if (scrubbing) releaseScrub();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (introActive.current) return;
       if (locked && !transition || booking()) return;
       const target = event.target instanceof HTMLElement ? event.target : null;
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || target?.isContentEditable
@@ -376,23 +372,11 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       if (locked && !transition) { finishBookingFlow(0); return; }
       bookingFlow = true;
       if (transition && transitionTarget === 1) return;
-      // The opening slide moves away first; the walk in starts once it has handed over.
-      if (introActive.current) {
-        window.dispatchEvent(new Event(leaveIntroEvent));
-        const startedAt = performance.now();
-        const wait = () => {
-          if (!bookingFlow) return;
-          if (introActive.current && performance.now() - startedAt < 5000) { requestAnimationFrame(wait); return; }
-          playTransition(true);
-        };
-        requestAnimationFrame(wait);
-        return;
-      }
       playTransition(true);
     };
     addEventListener(bookFlowEvent, onBookFlow);
     // The "Scroll" button on the booth's front: walk in without scrolling.
-    const onEnter = () => { if (!introActive.current && !booking() && !locked) playTransition(true); };
+    const onEnter = () => { if (!booking() && !locked) playTransition(true); };
     addEventListener(enterEvent, onEnter);
     if (!initialized.current && direct.current) navigate();
     else if (reduced && scrollY > 0 && !direct.current) {
@@ -425,6 +409,6 @@ export function useJourneyProgress(home: RefObject<HTMLAnchorElement | null>, in
       removeEventListener(bookFlowEvent, onBookFlow);
       window.clearTimeout(bookingTimer);
     };
-  }, [home, introActive, reduced, initialDirect, sceneProgress]);
+  }, [home, reduced, initialDirect, sceneProgress]);
   return { journey, stage, surface, work, initialDirect, sceneProgress, onPortal, sceneEnabled: sceneAllowed && !reduced };
 }

@@ -6,8 +6,8 @@ import type { ProductScene } from "../scene/createProductScene";
 // Marvin's prints (4R, XL strip in its sleeve, mini tote) as 3D models on small
 // white displays, on a turntable that turns slowly all the time
 // (scene/createProductScene.ts), with the name of the one in front above it. Drag
-// it or use the arrow keys to bring another round. Used on the opening slide and
-// again in the booth, under the monitor.
+// it or use the arrow keys to bring another round. Shown in the booth, under the
+// monitor (PrintsShowcase).
 export function ProductTurntable({ running, load = true, heading: Heading = "h2" }: {
   /** Drawn only while true (on screen). */
   running: boolean;

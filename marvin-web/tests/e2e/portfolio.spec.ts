@@ -6,7 +6,7 @@ async function openSection(page: Page, hash: string) {
 }
 
 test("the header shows the logo and the tagline, and #hello opens the booking section", async ({ page }) => {
-  await page.goto("./?intro=0");
+  await page.goto("./");
   await expect(page.locator(".site-header")).toContainText("Romanticizing moments through our lens");
   await expect(page.locator(".site-header nav")).toHaveCount(0);
   await openSection(page, "#hello");
@@ -184,7 +184,7 @@ test("every screen gets the laptop's monitor: same layout, settled as a flat pag
 });
 
 test("Book a session sends the order to WhatsApp", async ({ page }) => {
-  await page.goto("./?intro=0");
+  await page.goto("./");
   await page.evaluate(() => {
     const opened: string[] = [];
     (window as unknown as { opened: string[] }).opened = opened;

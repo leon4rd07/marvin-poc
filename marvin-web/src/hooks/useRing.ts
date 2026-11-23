@@ -2,9 +2,9 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { wrap } from "../lib/timeline";
 
 // A ring of cards you spin: drag or swipe it, use the arrows or keys, or click a
-// card at the side. Used for an event's photos on the monitor and for the products
-// on the opening slide. What is drawn eases towards `angle` (a damped spring), so
-// every turn and snap glides; while dragging it follows the pointer directly.
+// card at the side. Used for an event's photos on the monitor. What is drawn eases
+// towards `angle` (a damped spring), so every turn and snap glides; while dragging
+// it follows the pointer directly.
 export function useRing(count: number) {
   const [angle, setAngle] = useState(0);
   const [dragging, setDragging] = useState(false);

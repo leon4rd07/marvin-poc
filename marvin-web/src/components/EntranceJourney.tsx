@@ -4,11 +4,10 @@ import { enterEvent } from "../lib/sections";
 import { BoothScene } from "./BoothScene";
 import { PortfolioMonitor } from "./PortfolioMonitor";
 
-export function EntranceJourney({ homeRef, introActive }: {
+export function EntranceJourney({ homeRef }: {
   homeRef: RefObject<HTMLAnchorElement | null>;
-  introActive: RefObject<boolean>;
 }) {
-  const { journey, stage, surface, work, initialDirect, sceneProgress, sceneEnabled, onPortal } = useJourneyProgress(homeRef, introActive);
+  const { journey, stage, surface, work, initialDirect, sceneProgress, sceneEnabled, onPortal } = useJourneyProgress(homeRef);
   return (
     <>
       {/* Plain wall colour behind the portfolio; only ever seen through the doorway. */}

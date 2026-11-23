@@ -7,7 +7,7 @@ import {
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { studioEnvironment } from "./studioEnvironment";
 
-// The opening slide's prints as real objects on white displays, on a turntable
+// Marvin's prints (under the monitor) as real objects on white displays, on a turntable
 // that turns slowly and never stops on its own: the 4R print on a clear acrylic
 // easel, the XL strip in its clear PVC sleeve with handles hanging from a chrome
 // stand, and the mini tote, a clear PVC bag with the printed card inside.
