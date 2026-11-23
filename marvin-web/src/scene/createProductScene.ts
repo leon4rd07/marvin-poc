@@ -158,10 +158,10 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
     "4r": front => {
       // A 4R print (4 x 6 in), leaning back on a clear acrylic easel.
       const group = new Group();
-      const card = print(1, 1.535, front);
+      const card = print(1, 1.5, front);
       const lean = .08;
       card.rotation.x = -lean;
-      card.position.set(0, .06 + 1.535 / 2 * Math.cos(lean), -.02 - 1.535 / 2 * Math.sin(lean));
+      card.position.set(0, .06 + 1.5 / 2 * Math.cos(lean), -.02 - 1.5 / 2 * Math.sin(lean));
       group.add(card);
       const back = mesh(new BoxGeometry(.5, 1.05, .02), acrylic, false);
       back.rotation.x = .32;
@@ -195,8 +195,10 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
       stand.add(base, pole, arm, hook);
       group.add(stand);
       const sleeve = bag(width, height, .05, .3, handleHeight);
-      const strip = print(width - .05, height - .2, front);
-      strip.position.set(0, (height - .2) / 2 + .04, .006);
+      // The strip is a 1 : 3 print, a little clear sleeve above it.
+      const stripHeight = (width - .05) * 3;
+      const strip = print(width - .05, stripHeight, front);
+      strip.position.set(0, stripHeight / 2 + .04, .006);
       sleeve.add(strip);
       sleeve.position.set(0, 2.29 - height - handleHeight, .02);
       group.add(sleeve);

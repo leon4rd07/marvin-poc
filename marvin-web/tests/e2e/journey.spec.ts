@@ -12,9 +12,10 @@ test("long content and enlarged text remain reachable at 320 pixels", async ({ p
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(await page.locator(".site-header").evaluate(header => {
     const brand = header.querySelector(".wordmark")!.getBoundingClientRect();
-    const tagline = header.querySelector(".header-note")!.getBoundingClientRect();
-    return brand.right + 8 <= tagline.left;
+    const button = header.querySelector(".book-event")!.getBoundingClientRect();
+    return brand.right + 8 <= button.left && button.right <= innerWidth;
   })).toBe(true);
+  await expect(page.getByRole("button", { name: "Book an event" })).toBeVisible();
   await page.getByRole("button", { name: "Next event" }).click();
   await expect(page.locator(".event-title")).toHaveText("B&K's Wedding");
   await page.locator(".closing-book").first().scrollIntoViewIfNeeded();

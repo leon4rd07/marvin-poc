@@ -100,9 +100,11 @@ test("the selfie flashes, prints a polaroid out of the console's slot, and it ca
   await expect(papers.first()).toHaveAttribute("data-closing", "true");
 });
 
-test("only the closing section follows the booth wall", async ({ page }) => {
+test("the prints, then the closing section follow the booth wall", async ({ page }) => {
   await page.goto("./#work");
-  await expect(page.locator(".after > section")).toHaveCount(1);
+  await expect(page.locator(".after > section")).toHaveCount(2);
+  await expect(page.locator(".after > section").first()).toHaveId("prints");
+  await expect(page.locator(".after > section").last()).toHaveId("hello");
   await expect(page.locator("#experience")).toHaveCount(0);
 });
 
@@ -115,8 +117,7 @@ test("scrolling down the booth wall reaches the booking section with social link
   await expect(page.getByRole("link", { name: "Marvin on Instagram" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Marvin on TikTok" })).toHaveAttribute("href", "https://www.tiktok.com/@marvinstudio.id");
   await expect(page.getByRole("link", { name: "Marvin on Instagram" })).toHaveAttribute("href", "https://www.instagram.com/marvinstudio_id/");
-  // The shutter recording's licence (CC BY 3.0) asks for a credit.
-  await expect(page.getByRole("link", { name: "caseymoura" })).toHaveAttribute("href", /freesound\.org\/people\/caseymoura/);
+  await expect(page.getByRole("link", { name: "caseymoura" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Take another look/ })).toHaveCount(0);
   await expect(page.getByText("THE MARVIN PHOTO CONCEPT")).toHaveCount(0);
 });

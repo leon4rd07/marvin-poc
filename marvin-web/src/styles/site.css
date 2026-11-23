@@ -48,12 +48,47 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .stack-main { font-size: 1em; line-height: 1.05; color: var(--ink); }
 .stack-sub { margin-top: .5em; font-size: max(.6em, 9px); line-height: 1.2; letter-spacing: .24em; color: var(--ink); }
 .header-note { margin: 0; font-size: 1.05rem; text-align: center; }
-/* The opening slide (ProductIntro.tsx): Marvin's prints, drawn on white displays,
-   on the same ring as the event photos, over the booth until it is scrolled away
-   (moved up by the script). The name of the print in front is above the ring. */
+/* "Book an event": an ink pill with a yellow flash bulb holding Marvin's star. The
+   bulb pulses now and then; pointed at, its light floods the whole pill and the
+   star turns. */
+.book-event {
+  grid-column: -2; justify-self: end; position: relative; isolation: isolate; overflow: hidden;
+  display: inline-flex; align-items: center; gap: .75rem; min-height: 46px; padding: 5px 1.25rem 5px 5px;
+  border: 0; border-radius: 999px; background: var(--ink); color: #fbfaf5; cursor: pointer;
+  font: inherit; font-size: .7rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap;
+  box-shadow: 0 10px 24px -14px #1d1f1a99;
+}
+.book-event-flash { position: relative; display: grid; place-items: center; width: 36px; height: 36px; flex: none; }
+.book-event-flash::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 50%; background: var(--yellow);
+  transition: transform .5s cubic-bezier(.2, .7, .2, 1);
+}
+.book-event-flash::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 0 #f1cd3c99;
+  animation: book-flash 3.2s ease-out infinite;
+}
+.book-event-flash svg { width: 18px; height: 18px; fill: var(--ink); transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
+.book-event-label { position: relative; transition: color .3s ease; }
+.book-event:hover .book-event-flash::before, .book-event:focus-visible .book-event-flash::before { transform: scale(14); }
+.book-event:hover .book-event-label, .book-event:focus-visible .book-event-label { color: var(--ink); }
+.book-event:hover .book-event-flash svg, .book-event:focus-visible .book-event-flash svg { transform: rotate(144deg); }
+.book-event:active { transform: scale(.97); }
+/* Very large text on a narrow phone: the button keeps its star (and its name for
+   screen readers) and the words step aside, so it never runs into the logo. */
+.site-header { container-type: inline-size; }
+@container (max-width: 18em) {
+  .book-event { padding-right: 5px; }
+  .book-event-label { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+}
+/* Too narrow for the tagline and the button side by side: the button stays. */
+@media (max-width: 1040px) { .header-note { display: none; } }
+@keyframes book-flash { 0%, 62% { box-shadow: 0 0 0 0 #f1cd3c99; } 100% { box-shadow: 0 0 0 12px #f1cd3c00; } }
+/* The opening slide (ProductIntro.tsx): Marvin's prints on their turning displays
+   (ProductTurntable.tsx), over the booth until it is scrolled away (moved up by the
+   script). The name of the print in front is above them. */
 .product-intro {
   position: fixed; inset: var(--header) 0 0; z-index: 20; overflow: hidden;
-  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; justify-items: center; align-items: center;
+  display: grid; grid-template-rows: auto minmax(0, 1fr); justify-items: center; align-items: center;
   padding: clamp(18px, 4svh, 44px) 16px clamp(76px, 12svh, 112px);
   background: #fff; will-change: transform;
 }
@@ -67,19 +102,22 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .product-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .6s ease; }
 .product-stage[data-state="ready"] .product-canvas { opacity: 1; }
 .product-flat { position: absolute; inset: 8% 0; margin: auto; max-width: 70%; max-height: 84%; object-fit: contain; box-shadow: 0 18px 40px rgb(0 0 0 / .14); }
-.product-dots { display: flex; gap: 2px; margin-top: clamp(4px, 1svh, 12px); }
-.product-scroll.scroll-cue { opacity: 1; border: 0; background: none; padding: 0; cursor: pointer; pointer-events: auto; font: inherit; color: var(--ink); }
+.product-scroll.scroll-cue { opacity: 1; pointer-events: auto; }
 
-/* "Scroll" on the booth's front: a hint that the page goes on, shown until you
-   start walking in (and not while the opening slide is up). */
+/* "Scroll" on the opening slide and on the booth's front: a button (tapping it plays
+   the move, no scrolling needed), the same size on both, shown on the booth until
+   you start walking in (and not while the opening slide is up). */
 .scroll-cue {
   position: absolute; z-index: 3; left: 50%; bottom: max(20px, env(safe-area-inset-bottom, 0px) + 12px);
-  display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0;
-  color: var(--ink); font-size: .66rem; letter-spacing: .3em; translate: -50% 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; background: none;
+  font: inherit; color: var(--ink); font-size: .66rem; line-height: 1.2; letter-spacing: .3em; translate: -50% 0; cursor: pointer;
   opacity: 0; transition: opacity .4s ease; pointer-events: none;
 }
-.stage[data-phase="booth"] .scroll-cue { opacity: 1; transition-delay: .3s; }
-:root[data-intro="open"] .stage .scroll-cue { opacity: 0; transition: none; }
+.stage[data-phase="booth"] .scroll-cue { opacity: 1; transition-delay: .3s; pointer-events: auto; }
+.scroll-cue:hover .scroll-cue-label { background: var(--yellow); }
+.scroll-cue:focus-visible { outline: none; }
+.scroll-cue:focus-visible .scroll-cue-label { outline: 3px solid var(--focus); outline-offset: 2px; }
+:root[data-intro="open"] .stage .scroll-cue { opacity: 0; transition: none; pointer-events: none; }
 .scroll-cue-label { display: inline-block; white-space: nowrap; padding: .75em 1.1em .75em 1.4em; border-radius: 999px; background: #fbfaf5e6; box-shadow: 0 6px 18px -10px #2a1f0f66, inset 0 0 0 1px #1d1f1a14; }
 /* A small arrow bobbing downwards, the same for mouse and touch. */
 .scroll-cue-arrow {
@@ -376,6 +414,34 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 
 /* ---- Below the booth: the closing section -------------------------------- */
 .after { background: #fff; color: var(--ink); }
+/* Under the monitor: the prints (PrintsShowcase.tsx). The booth's cream wall (the
+   same side-to-side shading) fades into a warm white as you scroll down; the prints
+   rise in with the scroll (--enter). The booking section below is a white sheet
+   with rounded top corners laid over the end of it. */
+.prints {
+  position: relative; height: var(--stage-height); min-height: 560px;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr); justify-items: center; align-items: start;
+  padding: calc(var(--header) + clamp(10px, 3svh, 36px)) 16px calc(40px + clamp(12px, 4svh, 40px));
+  background:
+    linear-gradient(180deg, #f7f2ea00 0%, #f7f2eacc 26%, #f8f4ee 52%, #f8f4ee 100%),
+    linear-gradient(90deg, #cdb998, #e5d6bd 18%, #eadcc4 50%, #e5d6bd 82%, #cdb998);
+}
+/* A soft blend over the line where the booth's wall (darker at the floor) ends. */
+.prints::before {
+  content: ""; position: absolute; z-index: 1; left: 0; right: 0; top: -6svh; height: 22svh; pointer-events: none;
+  background: linear-gradient(180deg, #e2d2b600 0%, #e7dac4 30%, #efe6d800 100%);
+}
+.prints > * { position: relative; z-index: 2; }
+.prints-title { margin: 0 0 clamp(10px, 2svh, 18px); color: var(--muted); font-size: .7rem; letter-spacing: .3em; }
+.prints .product-caption, .prints .product-stage, .prints-title {
+  opacity: var(--enter, 1); translate: 0 calc((1 - var(--enter, 1)) * 64px);
+}
+.prints .product-stage { width: min(100%, 1180px); align-self: stretch; scale: calc(.92 + var(--enter, 1) * .08); }
+.prints .product-name { font-size: clamp(1.6rem, 3.8vw, 2.7rem); }
+.prints + .closing {
+  position: relative; margin-top: -40px; border-radius: 40px 40px 0 0; background: #fff;
+  box-shadow: 0 -22px 44px -30px #4a3b2440;
+}
 h2 { margin: 0 0 18px; font-size: clamp(2rem, 3vw, 2.7rem); line-height: 1.05; white-space: pre-line; overflow-wrap: anywhere; text-wrap: balance; }
 .closing { min-height: 70svh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 96px 28px; scroll-margin-top: var(--header); }
 .closing h2 { margin: 0; font-size: clamp(1.7rem, 4.2vw, 3.4rem); white-space: normal; }
@@ -402,8 +468,6 @@ button.closing-book { padding: 0; border: 0; background: none; }
 .closing-social { list-style: none; display: flex; gap: 14px; margin: 44px 0 0; padding: 0; }
 .closing-social a { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 20px 0 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); font-size: .75rem; }
 .closing-social a:hover { border-color: var(--ink); }
-.closing-credit { margin: 28px 0 0; color: var(--muted); font-size: .58rem; letter-spacing: .2em; }
-.closing-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .closing-social svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .closing-social svg .fill { fill: currentColor; stroke: none; }
 
@@ -418,10 +482,15 @@ button.closing-book { padding: 0; border: 0; background: none; }
 @media (max-width: 700px) and (max-aspect-ratio: 4 / 5) {
   /* Room above the monitor for the EXIT sign. */
   .room-left { padding: 76px 0 13em; }
-  .monitor-screen { height: clamp(44em, calc(var(--room-h) - 46em - 76px), 92em); padding-bottom: 4.6em; }
-  .ring { --card: 21em; }
+  .monitor-screen { height: clamp(44em, calc(var(--room-h) - 34em - 76px), 120em); padding-bottom: 4.6em; }
+  /* On a phone the photos are made big, about half the screen's width (and never
+     taller than the screen allows); the prints at the sides tuck under the edges. */
+  .showcase-media { --phone-card: min(44em, 23svh); }
+  .ring { --card: var(--phone-card); }
   /* The hint sits right under the photos, clear of the event dots. */
-  .ring-hint { bottom: auto; top: calc(50% + var(--u) * 14.6); }
+  .ring-hint { bottom: auto; top: calc(50% + var(--phone-card) * .68 + .4em); }
+  /* (On a short phone there is no room for it between the photos and the dots.) */
+  @media (max-height: 720px) { .ring-hint { display: none; } }
   /* The 3D model and the video stop above the event dots. */
   .model-viewer, .showcase-slide { inset: 0 0 4.2em; }
   .console { width: 46%; }
@@ -445,6 +514,10 @@ button.closing-book { padding: 0; border: 0; background: none; }
   .wordmark img { height: 2.6rem; }
   .header-note { font-size: .66rem; text-align: right; justify-self: end; }
   .header-note .stack-main { letter-spacing: .06em; line-height: 1.45; }
+  /* On a phone the button takes the tagline's place. */
+  .header-note { display: none; }
+  .book-event { min-height: 42px; gap: .6rem; padding-right: 1rem; font-size: .62rem; letter-spacing: .18em; }
+  .book-event-flash { width: 32px; height: 32px; }
   .site-header { grid-template-columns: auto 1fr; }
         .closing { min-height: 60svh; padding-block: 72px; }
   .closing-social { flex-direction: column; align-items: center; }

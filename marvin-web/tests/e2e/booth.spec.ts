@@ -21,7 +21,7 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await page.goto("./?intro=0");
   const scene = page.locator(".booth-renderer");
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(page.locator("canvas:not(.product-canvas)")).toHaveCount(1);
   await expect(page.locator("video")).toHaveCount(0);
   const camera = await scene.getAttribute("data-camera");
   await goToProgress(page, .285);
@@ -47,10 +47,10 @@ test("3D curtain and camera move together, hold, reverse, and release on shortcu
   await expect(scene).toHaveAttribute("data-camera", openingCamera!);
   await openSection(page, "#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator("canvas:not(.product-canvas)")).toHaveCount(0);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await expect(scene).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
-  await expect(page.locator("canvas")).toHaveCount(1);
+  await expect(page.locator("canvas:not(.product-canvas)")).toHaveCount(1);
   expect(videoRequests).toEqual([]);
   expect(errors).toEqual([]);
 });
@@ -124,7 +124,7 @@ test("direct entry does not load the 3D renderer until the visitor goes home", a
   page.on("request", request => { if (/createBoothScene|\.mp4/.test(request.url())) resources.push(request.url()); });
   await page.goto("./#work");
   await expect(page.getByRole("button", { name: "Photos" })).toBeFocused();
-  await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator("canvas:not(.product-canvas)")).toHaveCount(0);
   expect(resources).toEqual([]);
   await page.getByRole("link", { name: "Marvin Studio home" }).click();
   await expect.poll(() => resources.length).toBeGreaterThan(0);
@@ -154,7 +154,7 @@ test("GPU context loss falls back without hiding portfolio access", async ({ pag
   test.skip(browserName !== "chromium", "Context-loss extension is exercised in Chrome.");
   await page.goto("./?intro=0");
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "ready", { timeout: 60000 });
-  await page.locator("canvas").evaluate(canvas => canvas.getContext("webgl2")!.getExtension("WEBGL_lose_context")!.loseContext());
+  await page.locator("canvas:not(.product-canvas)").evaluate(canvas => canvas.getContext("webgl2")!.getExtension("WEBGL_lose_context")!.loseContext());
   await expect(page.locator(".booth-renderer")).toHaveAttribute("data-renderer", "fallback");
   await expect(page.locator(".booth-poster")).toBeVisible();
   await openSection(page, "#work");

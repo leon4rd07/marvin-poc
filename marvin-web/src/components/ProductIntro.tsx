@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { products } from "../data/portfolio";
-import { asset } from "../lib/assets";
-import { sectionFromHash } from "../lib/sections";
+import { leaveIntroEvent, sectionFromHash } from "../lib/sections";
 import { clamp } from "../lib/timeline";
-import type { ProductScene } from "../scene/createProductScene";
+import { ProductTurntable } from "./ProductTurntable";
 
-// The opening slide: Marvin's prints (4R, XL strip in its sleeve, mini tote) as 3D
-// models on white displays, on a turntable that turns slowly all the time
-// (scene/createProductScene.ts). Drag it, use the arrow keys or the dots to bring
-// another round; the name of the one in front is above. Scrolling down (wheel, swipe up, PageDown,
+// The opening slide: Marvin's prints on their slowly turning displays
+// (ProductTurntable). Scrolling down (wheel, swipe up, PageDown,
 // arrow down, space) slides it away to the booth; a deliberate scroll up in front
 // of the booth brings it back. Links straight into the booth, to the booking form
 // (?book) and ?intro=0 skip it.
@@ -29,33 +25,9 @@ export function ProductIntro({ activeRef, startActive }: {
 }) {
   const root = useRef<HTMLElement>(null);
   const [away, setAway] = useState(!startActive);
-  const host = useRef<HTMLDivElement>(null);
-  const scene = useRef<ProductScene | null>(null);
-  const [frontIndex, setFrontIndex] = useState(0);
-  // "loading" until the models are drawn; "failed" (no WebGL): the front print's
-  // artwork is shown flat instead.
-  const [state, setState] = useState<"loading" | "ready" | "failed">("loading");
-  const front = products[frontIndex];
-
-  useEffect(() => {
-    let disposed = false;
-    void import("../scene/createProductScene").then(({ createProductScene }) => {
-      if (disposed || !host.current) return;
-      try {
-        scene.current = createProductScene(host.current, {
-          products: products.map(product => ({ id: product.id, src: asset(product.src) })),
-          onFront: setFrontIndex,
-        });
-        setState("ready");
-      } catch {
-        setState("failed");
-      }
-    }).catch(() => { if (!disposed) setState("failed"); });
-    return () => { disposed = true; scene.current?.dispose(); scene.current = null; };
-  }, []);
-  // Drawn only while the slide is on screen.
-  useEffect(() => { scene.current?.setRunning(!away); }, [away, state]);
-
+  // Its models load when it is first shown (at once, unless the page opened inside
+  // the booth) and are then kept.
+  const [shown, setShown] = useState(startActive);
   useEffect(() => {
     const html = document.documentElement;
     // 0 = the slide fills the screen, 1 = it has moved away above the booth.
@@ -101,7 +73,7 @@ export function ProductIntro({ activeRef, startActive }: {
       from = position;
       startedAt = performance.now();
       activeRef.current = true;
-      if (next === 0) { html.dataset.intro = "open"; setAway(false); }
+      if (next === 0) { html.dataset.intro = "open"; setAway(false); setShown(true); }
       window.clearTimeout(handoff);
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(tick);
@@ -178,7 +150,8 @@ export function ProductIntro({ activeRef, startActive }: {
     addEventListener("touchcancel", onTouchEnd, true);
     addEventListener("keydown", onKeyDown, true);
     addEventListener("hashchange", onHashChange);
-    root.current?.addEventListener("marvin:leave-intro", onLeave);
+    root.current?.addEventListener(leaveIntroEvent, onLeave);
+    addEventListener(leaveIntroEvent, onLeave);
     const element = root.current;
     paint();
     return () => {
@@ -192,33 +165,16 @@ export function ProductIntro({ activeRef, startActive }: {
       removeEventListener("touchcancel", onTouchEnd, true);
       removeEventListener("keydown", onKeyDown, true);
       removeEventListener("hashchange", onHashChange);
-      element?.removeEventListener("marvin:leave-intro", onLeave);
+      element?.removeEventListener(leaveIntroEvent, onLeave);
+      removeEventListener(leaveIntroEvent, onLeave);
     };
   }, [activeRef, startActive]);
 
   return (
     <section className="product-intro" ref={root} data-away={away} aria-label="Marvin prints" inert={away}>
-      <div className="product-caption" aria-live="polite" aria-atomic="true">
-        <h2 className="product-name">{front.name}</h2>
-        <p className="product-detail">{front.detail}</p>
-      </div>
-      <div className="product-stage" ref={host} data-state={state}
-        role="img" aria-roledescription="carousel" tabIndex={0}
-        aria-label={`${front.alt}. Drag or use the arrow keys to turn.`}
-        onKeyDown={event => {
-          if (event.key === "ArrowRight") { event.preventDefault(); scene.current?.turn(1); }
-          if (event.key === "ArrowLeft") { event.preventDefault(); scene.current?.turn(-1); }
-        }}>
-        {state === "failed" && <img className="product-flat" src={asset(front.src)} alt="" draggable={false} />}
-      </div>
-      <div className="product-dots" role="group" aria-label="Prints">
-        {products.map((product, order) => (
-          <button type="button" className="event-dot" key={product.id} aria-label={`Show ${product.name}`}
-            aria-current={order === frontIndex} onClick={() => scene.current?.show(order)} />
-        ))}
-      </div>
+      <ProductTurntable running={!away} load={shown} />
       <button type="button" className="scroll-cue product-scroll" aria-label="Step inside the booth"
-        onClick={event => event.currentTarget.closest("section")?.dispatchEvent(new Event("marvin:leave-intro"))}>
+        onClick={event => event.currentTarget.closest("section")?.dispatchEvent(new Event(leaveIntroEvent))}>
         <span className="scroll-cue-label">Scroll</span>
         <svg className="scroll-cue-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5 12 15.5 18 9.5" /></svg>
       </button>

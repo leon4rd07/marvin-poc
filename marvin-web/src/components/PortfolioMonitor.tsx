@@ -4,12 +4,13 @@ import { useSelfie } from "../hooks/useSelfie";
 import { asset } from "../lib/assets";
 import { leaveEvent, openBooking } from "../lib/sections";
 import { PortfolioGallery } from "./PortfolioGallery";
+import { PrintsShowcase } from "./PrintsShowcase";
 import { PrintSlot, SelfieButton } from "./SelfiePrinter";
 
 // Inside the booth. You first face the back wall, then turn left to the wall where
 // the monitor hangs, with the camera above it and the console (selfie button and
 // print slot) below.
-// Scrolling further leads to the closing section.
+// Scrolling further leads to Marvin's prints (PrintsShowcase), then the closing section.
 export function PortfolioMonitor() {
   const { prints, flash, snap } = useSelfie();
   // Turning to the monitor (and back to the doorway before leaving) is a short 3D
@@ -106,6 +107,7 @@ export function PortfolioMonitor() {
         <p className="sr-only" role="status">{prints.some(print => !print.closing) ? "Your photo is printing." : ""}</p>
       </div>
       <div className="after">
+        <PrintsShowcase />
         <section id="hello" className="closing" aria-labelledby="closing-title">
           <div className="closing-cta">
           <h2 id="closing-title" tabIndex={-1}>
@@ -137,11 +139,6 @@ export function PortfolioMonitor() {
               </a>
             </li>
           </ul>
-          {/* The selfie's shutter sound is CC BY 3.0, which asks for this credit. */}
-          <p className="closing-credit">
-            Shutter sound: <a href="https://freesound.org/people/caseymoura/sounds/445482" target="_blank" rel="noopener noreferrer">caseymoura</a>,{" "}
-            <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener noreferrer">CC BY 3.0</a>
-          </p>
         </section>
       </div>
     </>
