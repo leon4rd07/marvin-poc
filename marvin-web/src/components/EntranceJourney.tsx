@@ -18,10 +18,10 @@ export function EntranceJourney({ homeRef }: {
           {/* Tapping it walks in, the same as scrolling. */}
           <button type="button" className="scroll-cue" aria-label="Walk into the booth"
             onClick={() => window.dispatchEvent(new Event(enterEvent))}>
+            <span className="scroll-cue-label"><span className="scroll-cue-word">Scroll</span></span>
             <span className="scroll-cue-key" aria-hidden="true">
               <svg className="scroll-cue-arrow" viewBox="0 0 24 24"><path d="M12 5v13" /><path d="M6.5 12.5 12 18l5.5-5.5" /></svg>
             </span>
-            <span className="scroll-cue-label">Scroll</span>
           </button>
         </div>
       </section>
