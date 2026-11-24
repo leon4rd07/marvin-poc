@@ -20,9 +20,9 @@ test("the site opens straight on the photobooth, with a big Scroll button that w
   const scroll = page.getByRole("button", { name: "Walk into the booth" });
   await expect(scroll).toBeVisible();
   // Big enough to see and to tap.
-  const label = (await scroll.locator(".scroll-cue-label").boundingBox())!;
-  expect(label.height).toBeGreaterThanOrEqual(48);
-  expect(label.width).toBeGreaterThanOrEqual(120);
+  const pill = (await scroll.boundingBox())!;
+  expect(pill.height).toBeGreaterThanOrEqual(56);
+  expect(pill.width).toBeGreaterThanOrEqual(160);
   expect(await scroll.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
   await scroll.click();
   await expect(page.locator("#work")).toHaveAttribute("data-active", "true", { timeout: 20000 });

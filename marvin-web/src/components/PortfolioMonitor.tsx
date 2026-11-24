@@ -93,8 +93,9 @@ export function PortfolioMonitor() {
             </div>
           </div>
         </div>
-        {/* EXIT, made like "Book an event" in the header (ink pill, yellow bulb).
-            It appears once you have turned to the monitor, and leads back out. */}
+        {/* EXIT: an ink pill with the way out in an ivory key ("Book an event" in
+            the header and "Scroll" are made the same). It appears once you have
+            turned to the monitor, and leads back out. */}
         <button type="button" className="exit-sign" onClick={() => window.dispatchEvent(new Event(leaveEvent))}
           aria-label="Exit the booth">
           <span className="exit-door" aria-hidden="true">
