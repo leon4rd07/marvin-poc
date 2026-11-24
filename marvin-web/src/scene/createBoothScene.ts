@@ -87,6 +87,11 @@ export function createBoothScene(
   let lost = false;
   let frames = 0;
   let distance = 8;
+  // How far the view looks below its usual point while you stand outside, so the
+  // booth sits higher and the "Scroll" button has the floor under it (0 when the
+  // booth's width, not its height, sets the framing, as on a phone: there the
+  // floor is already free).
+  let lift = 0;
   let previousTime = performance.now();
   let windTime = 0;
   let motionActive = true;
@@ -161,7 +166,7 @@ export function createBoothScene(
     const offsetY = (-look.y * .2 + Math.sin(driftTime * .21 + 1) * .04) * outside;
     // Keep eye level fixed during travel; change position, not field of view.
     camera.position.set(view.x + offsetX, view.y + offsetY, view.z);
-    target.set(view.lookX, view.lookY, view.lookZ);
+    target.set(view.lookX, view.lookY - lift * outside, view.lookZ);
     camera.lookAt(target);
     const drifting = outside > 0 && (Math.abs(look.targetX - look.x) > .002 || Math.abs(look.targetY - look.y) > .002);
     renderer.render(scene, camera);
@@ -190,7 +195,13 @@ export function createBoothScene(
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     const tangent = Math.tan(camera.fov * Math.PI / 360);
-    distance = .85 + Math.max(boothDimensions.height / (2 * tangent), 3.55 / (2 * tangent * camera.aspect)) * 1.2;
+    // The booth's height has to fit with the header above it and the "Scroll"
+    // button below it (about 250 px together), so on a short screen it stands
+    // further back; its width has to fit with a little air either side.
+    const byHeight = boothDimensions.height / (2 * tangent) * Math.max(1.2, .945 / (1 - Math.min(.45, 250 / height)));
+    const byWidth = 3.55 / (2 * tangent * camera.aspect) * 1.2;
+    distance = .85 + Math.max(byHeight, byWidth);
+    lift = byHeight >= byWidth ? .33 : 0;
     fog.near = distance + 4;
     fog.far = distance + 26;
     schedule();
