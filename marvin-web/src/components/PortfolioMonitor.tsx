@@ -93,8 +93,7 @@ export function PortfolioMonitor() {
             </div>
           </div>
         </div>
-        {/* A backlit EXIT sign mounted on the wall, made like the monitor and the
-            console (black glass, thin aluminium edge, the yellow of the shutter key).
+        {/* EXIT, made like "Book an event" in the header (ink pill, yellow bulb).
             It appears once you have turned to the monitor, and leads back out. */}
         <button type="button" className="exit-sign" onClick={() => window.dispatchEvent(new Event(leaveEvent))}
           aria-label="Exit the booth">

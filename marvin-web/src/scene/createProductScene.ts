@@ -1,6 +1,6 @@
 import {
   ACESFilmicToneMapping, BoxGeometry, CatmullRomCurve3, CylinderGeometry, DirectionalLight, DoubleSide, Group,
-  HemisphereLight, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry,
+  HemisphereLight, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, PCFShadowMap, PerspectiveCamera, PlaneGeometry,
   PMREMGenerator, SRGBColorSpace, Scene, ShadowMaterial, TextureLoader, TorusGeometry, TubeGeometry, Vector3, WebGLRenderer,
   type BufferGeometry, type Material, type Texture,
 } from "three";
@@ -31,7 +31,7 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
   renderer.toneMappingExposure = .95;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = PCFShadowMap;
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const canvas = renderer.domElement;
   canvas.className = "product-canvas";
   canvas.setAttribute("aria-hidden", "true");
@@ -88,8 +88,8 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
     side: DoubleSide, depthWrite: false, envMapIntensity: 1.6,
   }));
   const pvc = made(new MeshPhysicalMaterial({
-    color: "#ffffff", transparent: true, opacity: .14, roughness: .06, clearcoat: 1, clearcoatRoughness: .05,
-    side: DoubleSide, depthWrite: false, envMapIntensity: 1.8,
+    color: "#ffffff", transparent: true, opacity: .06, roughness: .06, clearcoat: 1, clearcoatRoughness: .05,
+    side: DoubleSide, depthWrite: false, envMapIntensity: 1.1,
   }));
   const seam = made(new MeshPhysicalMaterial({
     color: "#e9f1f4", transparent: true, opacity: .55, roughness: .1, clearcoat: 1, depthWrite: false,
@@ -107,8 +107,10 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
     texture.colorSpace = SRGBColorSpace;
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
     textures.push(texture);
-    // Photo paper: a soft sheen, not a mirror (strong reflections would grey the prints).
-    return made(new MeshStandardMaterial({ map: texture, roughness: .62, envMapIntensity: .25 }));
+    // The print's own colours, as sharp as the artwork: not lit, shaded or tone
+    // mapped (the studio light and the film curve greyed the blacks and washed
+    // out the colours, so the photos looked hazy). The paper round it is still lit.
+    return made(new MeshBasicMaterial({ map: texture, toneMapped: false }));
   };
   let loaded = 0;
 
@@ -148,7 +150,7 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
       group.add(handle);
       const button = mesh(new CylinderGeometry(.04, .04, .02, 20), snap);
       button.rotation.x = Math.PI / 2;
-      button.position.set(0, height - .09, z + Math.sign(z) * .03);
+      button.position.set(0, height - .05, z + Math.sign(z) * .03);
       group.add(button);
     }
     return group;
@@ -208,8 +210,9 @@ export function createProductScene(host: HTMLElement, { products, onFront }: {
       // The mini tote (25 x 20 cm): a clear bag standing on the display, its card inside.
       const width = 1.5, height = 1.2, depth = .26;
       const tote = bag(width, height, depth, .62, .62);
-      const card = print(width - .1, (width - .1) * .8, front);
-      card.position.set(0, .03 + (width - .1) * .4, depth / 2 - .045);
+      // A little below the snap at the mouth, so it never covers the artwork.
+      const card = print(width - .2, (width - .2) * .8, front);
+      card.position.set(0, .03 + (width - .2) * .4, depth / 2 - .045);
       tote.add(card);
       return tote;
     },

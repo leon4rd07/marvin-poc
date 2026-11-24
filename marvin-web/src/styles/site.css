@@ -173,33 +173,34 @@ a:focus-visible, button:focus-visible, h2:focus-visible, input:focus-visible + s
 .room-view {
   position: relative; height: 100%; overflow: hidden; perspective: 50vw; perspective-origin: 50% 50%;
 }
-/* EXIT: a slim ink pill with a hairline edge, the word in quiet white and the way
-   out in a small ivory key that brightens when you point at it. It only appears
-   once you are inside and have turned to the monitor. No backdrop blur: in
-   Chromium browsers it could flash black while the pointer rested on it. */
+/* EXIT: made like "Book an event" in the header (an ink pill with a yellow bulb,
+   the same type), with the way out in the bulb. Pointed at, the yellow floods the
+   pill and the arrow steps out. It only appears once you are inside and have
+   turned to the monitor. No backdrop blur: in Chromium browsers it could flash
+   black while the pointer rested on it. */
 .exit-sign {
   position: absolute; z-index: 6; left: max(18px, 3vw); top: calc(var(--header) + 18px);
-  display: flex; align-items: center; gap: .85rem; min-height: 46px; padding: 5px 1.25rem 5px 5px;
-  border: 0; border-radius: 999px;
-  background-color: #18191b;
-  box-shadow: inset 0 0 0 1px #ffffff1f, inset 0 1px 0 #ffffff2e, 0 14px 32px -16px #2a1f0f99, 0 2px 6px -2px #2a1f0f40;
-  color: #f4f1ea;
+  isolation: isolate; overflow: hidden;
+  display: flex; align-items: center; gap: .75rem; min-height: 46px; padding: 5px 1.25rem 5px 5px;
+  border: 0; border-radius: 999px; background: var(--ink); color: #fbfaf5; cursor: pointer;
+  font: inherit; font-size: .7rem; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; white-space: nowrap;
+  box-shadow: 0 10px 24px -14px #1d1f1a99;
   opacity: 0; transform: translateY(-6px); pointer-events: none; visibility: hidden;
-  transition: opacity .5s ease, transform .5s ease, visibility 0s linear .5s, background-color .25s ease;
+  transition: opacity .5s ease, transform .5s ease, visibility 0s linear .5s;
 }
 /* Shown once the turn to the monitor has (nearly) finished. */
-.work-scene[data-turned="true"] .exit-sign { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .5s ease 1.15s, transform .5s ease 1.15s, visibility 0s linear 1.15s, background-color .25s ease; }
-.exit-door {
-  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
-  background-color: #efebe2; color: #141516;
-  box-shadow: inset 0 1px 0 #fff, 0 1px 2px #0006;
-  transition: background-color .25s ease, box-shadow .25s ease;
+.work-scene[data-turned="true"] .exit-sign { opacity: 1; transform: none; pointer-events: auto; visibility: visible; transition: opacity .5s ease 1.15s, transform .5s ease 1.15s, visibility 0s linear 1.15s; }
+.exit-door { position: relative; display: grid; place-items: center; width: 36px; height: 36px; flex: none; color: var(--ink); }
+.exit-door::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 50%; background: var(--yellow);
+  transition: transform .5s cubic-bezier(.2, .7, .2, 1);
 }
-.exit-door svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s cubic-bezier(.3, .7, .2, 1); }
-.exit-word { font-size: .6875rem; line-height: 1; letter-spacing: .3em; }
-.exit-sign:hover { background-color: #26282b; }
-.exit-sign:hover .exit-door { background-color: #fff; box-shadow: inset 0 1px 0 #fff, 0 0 0 3px #ffffff33, 0 1px 2px #0006; }
-.exit-sign:hover .exit-door svg { transform: translateX(-2px); }
+.exit-door svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .35s cubic-bezier(.3, .7, .2, 1); }
+.exit-word { position: relative; line-height: 1; transition: color .3s ease; }
+.exit-sign:hover .exit-door::before, .exit-sign:focus-visible .exit-door::before { transform: scale(14); }
+.exit-sign:hover .exit-word, .exit-sign:focus-visible .exit-word { color: var(--ink); }
+.exit-sign:hover .exit-door svg, .exit-sign:focus-visible .exit-door svg { transform: translateX(-3px); }
+.work-scene[data-turned="true"] .exit-sign:active { transform: scale(.97); }
 /* The turn itself is animated from PortfolioMonitor. */
 .room { position: absolute; inset: 0; transform-style: preserve-3d; transform: translateZ(50vw) rotateY(0deg); }
 .room[data-facing="turning"] { will-change: transform; }
@@ -489,7 +490,8 @@ button.closing-book { padding: 0; border: 0; background: none; }
   :root { --header: calc(56px + env(safe-area-inset-top, 0px)); }
   .wordmark img { height: 2.1rem; }
   .header-note { font-size: .8rem; }
-      .exit-sign { top: calc(var(--header) + 10px); min-height: 36px; }
+      .exit-sign { top: calc(var(--header) + 10px); min-height: 36px; padding-block: 4px; }
+  .exit-door { width: 28px; height: 28px; }
   .showcase-views button { min-height: 26px; padding: 0 10px; font-size: 9px; }
   .slide-arrow { width: 24px; height: 24px; font-size: 15px; }
   .event-dot { width: 22px; height: 24px; }
@@ -507,6 +509,8 @@ button.closing-book { padding: 0; border: 0; background: none; }
   .header-note { display: none; }
   .book-event { min-height: 42px; gap: .6rem; padding-right: 1rem; font-size: .62rem; letter-spacing: .18em; }
   .book-event-flash { width: 32px; height: 32px; }
+  .exit-sign { min-height: 42px; gap: .6rem; padding-right: 1rem; font-size: .62rem; letter-spacing: .18em; }
+  .exit-door { width: 32px; height: 32px; }
   .site-header { grid-template-columns: auto 1fr; }
         .closing { min-height: 60svh; padding-block: 72px; }
   .closing-social { flex-direction: column; align-items: center; }
