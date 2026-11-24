@@ -9,7 +9,7 @@ npm ci
 npm run dev
 ```
 
-The site opens straight on the photobooth. In front of the booth a big "Scroll" button (an ink pill with a down arrow in an ivory key, made like EXIT and "Book an event") shows until you start walking in; tapping it walks in, the same as scrolling.
+The site opens straight on the photobooth. In front of the booth a big "Scroll" button (a cream pill with an arrow bobbing under it) shows until you start walking in; tapping it walks in, the same as scrolling.
 
 Vite serves the website on port 5173. A single downward wheel gesture, upward touch swipe or PageDown starts a 3.6-second entrance: one continuous zoom while the curtain opens, with the portfolio page sitting behind the doorway and growing with the camera, so there is no white flash or fade; the booth's back wall is a depth-only “portal” through which the HTML page shows. An upward wheel gesture at the portfolio's top reverses home at the same slower pace. Scrolling within portfolio content remains native; “Our work” is an immediate shortcut. The entrance occupies one viewport of document scroll and can also be scrubbed with the scrollbar. A continuous forward/lateral path and logarithmic distance interpolation keep the approach from rushing near the curtain. Gentle wind continues at rest with the top rail pinned, capped at 30 fps and paused when hidden or beyond the entrance. The entrance ignores the OS reduced-motion setting. No video is requested. The renderer is dynamically imported only when needed, with a capped pixel ratio and resource cleanup. Missing WebGL and context loss retain a matching poster fallback.
 

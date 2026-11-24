@@ -20,18 +20,10 @@ test("the site opens straight on the photobooth, with a big Scroll button that w
   const scroll = page.getByRole("button", { name: "Walk into the booth" });
   await expect(scroll).toBeVisible();
   // Big enough to see and to tap.
-  const pill = (await scroll.locator(".scroll-cue-label").boundingBox())!;
-  expect(pill.height).toBeGreaterThanOrEqual(52);
-  expect(pill.width).toBeGreaterThanOrEqual(160);
-  // Symmetric: the word and the arrow's key are centred on the pill.
-  for (const part of [".scroll-cue-word", ".scroll-cue-key"]) {
-    const box = (await scroll.locator(part).boundingBox())!;
-    const word = part === ".scroll-cue-word";
-    // The word's own box includes the spacing after its last letter (taken back by its margin).
-    const centre = box.x + (word ? box.width - await scroll.locator(part).evaluate(e => parseFloat(getComputedStyle(e).letterSpacing)) : box.width) / 2;
-    expect(Math.abs(centre - (pill.x + pill.width / 2))).toBeLessThan(1.5);
-  }
-  expect(await scroll.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
+  const label = (await scroll.locator(".scroll-cue-label").boundingBox())!;
+  expect(label.height).toBeGreaterThanOrEqual(60);
+  expect(label.width).toBeGreaterThanOrEqual(170);
+  expect(await scroll.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(17);
   await scroll.click();
   await expect(page.locator("#work")).toHaveAttribute("data-active", "true", { timeout: 20000 });
 });
